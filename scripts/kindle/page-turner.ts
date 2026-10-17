@@ -7,12 +7,14 @@
  * "next page" for that book. Japanese vertical books advance with ArrowLeft and
  * horizontal ones with ArrowRight, so the direction is probed once at startup.
  *
- * Usage: npx tsx scripts/kindle/page-turner.ts [--interval 30] [--cdp http://127.0.0.1:9222] [--direction rtl|ltr]
+ * Usage: npx tsx scripts/kindle/page-turner.ts [--interval 30] [--cdp http://127.0.0.1:9222] [--direction rtl|ltr] [--screenshot-dir <dir>]
  * See scripts/README.md for launching Chromium and tunnelling to a remote one.
  */
 
 import { parseArgs } from 'node:util';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { mkdir, readdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { chromium, type Browser, type Page } from 'playwright-core';
 
 const NEXT_KEY_BY_DIRECTION = { rtl: 'ArrowLeft', ltr: 'ArrowRight' } as const;
@@ -26,11 +28,14 @@ const POSITION_PATTERN = /(\d+)\s*(?:\/|of)\s*(\d+)/;
 
 const PAGE_CHANGE_TIMEOUT_MS = 10_000;
 const PAGE_CHANGE_POLL_MS = 250;
+const IMAGE_LOAD_TIMEOUT_MS = 10_000;
+const IMAGE_LOAD_POLL_MS = 100;
 
 interface CliOptions {
   cdpUrl: string;
   intervalMs: number;
   direction?: Direction;
+  screenshotDir?: string;
 }
 
 interface Position {
@@ -53,6 +58,7 @@ function parseCliOptions(): CliOptions {
       cdp: { type: 'string', default: 'http://127.0.0.1:9222' },
       interval: { type: 'string', default: '30' },
       direction: { type: 'string' },
+      'screenshot-dir': { type: 'string' },
     },
   });
   const intervalSecs = Number(values.interval);
@@ -61,7 +67,12 @@ function parseCliOptions(): CliOptions {
   if (values.direction !== undefined && !isDirection(values.direction)) {
     throw new Error(`--direction must be rtl or ltr, got "${values.direction}"`);
   }
-  return { cdpUrl: values.cdp, intervalMs: intervalSecs * 1000, direction: values.direction };
+  return {
+    cdpUrl: values.cdp,
+    intervalMs: intervalSecs * 1000,
+    direction: values.direction,
+    screenshotDir: values['screenshot-dir'],
+  };
 }
 
 function findBookPage(browser: Browser): Page {
@@ -82,6 +93,12 @@ function readReaderDom(selectors: typeof READER_SELECTORS): { footerText: string
   const footerText = document.querySelector(selectors.footer)?.textContent ?? '';
   const images = Array.from(document.querySelectorAll<HTMLImageElement>(selectors.pageImages));
   return { footerText, imageSources: images.map((image) => image.src).join('|') };
+}
+
+// Runs in the browser, under the same constraint as readReaderDom.
+function arePageImagesLoaded(pageImagesSelector: string): boolean {
+  const images = Array.from(document.querySelectorAll<HTMLImageElement>(pageImagesSelector));
+  return images.every((image) => image.complete && image.naturalWidth > 0);
 }
 
 async function readSnapshot(page: Page): Promise<ReaderSnapshot> {
@@ -131,7 +148,24 @@ function formatPosition(snapshot: ReaderSnapshot): string {
   return `[${time}] ${current}/${total} (${Math.round((current / total) * 100)}%)`;
 }
 
-async function turnPagesUntilStopped(page: Page, nextKey: string, options: { intervalMs: number; signal: AbortSignal }): Promise<void> {
+async function saveScreenshot(page: Page, screenshotDir: string): Promise<void> {
+  // A changed image src only means the new page started loading; wait so the capture is not blank.
+  // Interval polling instead of the requestAnimationFrame default, which stalls when the tab is hidden.
+  await page.waitForFunction(arePageImagesLoaded, READER_SELECTORS.pageImages, {
+    timeout: IMAGE_LOAD_TIMEOUT_MS,
+    polling: IMAGE_LOAD_POLL_MS,
+  });
+  const pageNumber = (await readdir(screenshotDir)).length + 1;
+  const fileName = `${String(pageNumber).padStart(4, '0')}.png`;
+  // Numbering continues from the files already there, so a rerun appends; 'wx' fails rather than overwrite.
+  await writeFile(path.join(screenshotDir, fileName), await page.screenshot(), { flag: 'wx' });
+}
+
+async function turnPagesUntilStopped(
+  page: Page,
+  nextKey: string,
+  options: { intervalMs: number; signal: AbortSignal; screenshotDir?: string },
+): Promise<void> {
   while (!options.signal.aborted) {
     const isIntervalElapsed = await sleep(options.intervalMs, undefined, { signal: options.signal }).then(
       () => true,
@@ -145,6 +179,7 @@ async function turnPagesUntilStopped(page: Page, nextKey: string, options: { int
       return;
     }
     console.log(formatPosition(after));
+    if (options.screenshotDir) await saveScreenshot(page, options.screenshotDir);
   }
 }
 
@@ -157,9 +192,20 @@ async function runPageTurner(page: Page, options: CliOptions): Promise<void> {
   const nextKey = NEXT_KEY_BY_DIRECTION[direction];
   console.log(`${formatPosition(start)} - ${direction}, next page = ${nextKey}, every ${options.intervalMs / 1000}s. Ctrl+C to stop.`);
 
+  if (options.screenshotDir) {
+    await mkdir(options.screenshotDir, { recursive: true });
+    console.log(`Saving a screenshot of each page to ${path.resolve(options.screenshotDir)}`);
+    // The direction probe has already returned to the start page, so this captures the page the run begins on.
+    await saveScreenshot(page, options.screenshotDir);
+  }
+
   const stopController = new AbortController();
   process.once('SIGINT', () => stopController.abort());
-  await turnPagesUntilStopped(page, nextKey, { intervalMs: options.intervalMs, signal: stopController.signal });
+  await turnPagesUntilStopped(page, nextKey, {
+    intervalMs: options.intervalMs,
+    signal: stopController.signal,
+    screenshotDir: options.screenshotDir,
+  });
 }
 
 async function main(): Promise<void> {
