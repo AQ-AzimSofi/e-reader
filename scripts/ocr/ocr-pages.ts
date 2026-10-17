@@ -112,7 +112,7 @@ function parseCliOptions(): CliOptions {
   const resolvedImageDir = path.resolve(imageDir);
   return {
     imageDir: resolvedImageDir,
-    // Kept outside the image folder: page-turner.ts numbers screenshots by counting that folder's entries.
+    // Kept next to the image folder, not inside it, so a page-turner.ts screenshot folder holds only page images.
     outDir: path.resolve(values['out-dir'] ?? `${resolvedImageDir}-ocr`),
     model: values.model,
     concurrency,

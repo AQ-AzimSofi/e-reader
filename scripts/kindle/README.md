@@ -63,8 +63,9 @@ npx tsx scripts/kindle/page-turner.ts --interval 3 --screenshot-dir "$env:USERPR
 - Waits for the page images to finish loading before capturing, so shots are not blank
 - Captures the visible browser area, so the reader's header and footer appear
   whenever they are on screen
-- Numbering continues from the files already in the folder, so running again into
-  the same folder appends. It never overwrites; a name collision stops the run
+- Numbering continues after the highest-numbered PNG already in the folder (other
+  files are ignored), so running again into the same folder appends. It never
+  overwrites; a name collision stops the run
 - Use one folder per book, outside the repo. A relative path is resolved from the
   directory you run the command in
 - Keep the Chrome window visible: not minimized, with the book tab in front. Chrome

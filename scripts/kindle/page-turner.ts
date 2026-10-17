@@ -25,6 +25,7 @@ const READER_SELECTORS = { footer: 'ion-footer', pageImages: '#kr-renderer img' 
 const BOOK_URL_PATTERN = /^https:\/\/read\.amazon\.[a-z.]+\/.*[?&]asin=/;
 // Footer reads "位置12/2218 ● 1%" in Japanese and "Location 12 of 2218" in English.
 const POSITION_PATTERN = /(\d+)\s*(?:\/|of)\s*(\d+)/;
+const SCREENSHOT_NAME_PATTERN = /^(\d+)\.png$/;
 
 const PAGE_CHANGE_TIMEOUT_MS = 10_000;
 const PAGE_CHANGE_POLL_MS = 250;
@@ -155,10 +156,19 @@ async function saveScreenshot(page: Page, screenshotDir: string): Promise<void> 
     timeout: IMAGE_LOAD_TIMEOUT_MS,
     polling: IMAGE_LOAD_POLL_MS,
   });
-  const pageNumber = (await readdir(screenshotDir)).length + 1;
+  const pageNumber = (await findLastScreenshotNumber(screenshotDir)) + 1;
   const fileName = `${String(pageNumber).padStart(4, '0')}.png`;
-  // Numbering continues from the files already there, so a rerun appends; 'wx' fails rather than overwrite.
+  // Numbering continues after the files already there, so a rerun appends; 'wx' fails rather than overwrite.
   await writeFile(path.join(screenshotDir, fileName), await page.screenshot(), { flag: 'wx' });
+}
+
+/** Highest NNNN.png number in the folder, or 0; other files and gaps from deleted shots are ignored. */
+async function findLastScreenshotNumber(screenshotDir: string): Promise<number> {
+  const screenshotNumbers = (await readdir(screenshotDir))
+    .map((fileName) => SCREENSHOT_NAME_PATTERN.exec(fileName)?.[1])
+    .filter((digits): digits is string => digits !== undefined)
+    .map(Number);
+  return Math.max(0, ...screenshotNumbers);
 }
 
 async function turnPagesUntilStopped(
