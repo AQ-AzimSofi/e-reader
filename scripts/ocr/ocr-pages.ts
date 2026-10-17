@@ -14,7 +14,7 @@
  * Usage: npx tsx scripts/ocr/ocr-pages.ts <image-dir> [--out-dir <dir>] [--model gemini-3.5-flash] [--concurrency <n>]
  *
  * Output (the out dir defaults to "<image-dir>-ocr" next to the image folder):
- *   <out-dir>/pages/<image-name>.txt   one per image; delete one to transcribe that page again
+ *   <out-dir>/pages/<image-stem>.txt   one per image (0001.png -> 0001.txt); delete one to transcribe that page again
  *   <out-dir>/<image-dir-name>.txt     all pages joined
  */
 
@@ -171,9 +171,14 @@ function retireKey(keyPool: KeyPool, key: ApiKey, reason: string): void {
 
 async function listImageNames(imageDir: string): Promise<string[]> {
   const entries = await readdir(imageDir);
-  return entries
+  const imageNames = entries
     .filter((name) => path.extname(name).toLowerCase() in MIME_TYPE_BY_EXTENSION)
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  // Page text is cached per name without the extension, so 0001.png and 0001.jpg would overwrite each other.
+  const pageNames = imageNames.map((imageName) => path.parse(imageName).name);
+  const sharedPageName = pageNames.find((pageName, index) => pageNames.indexOf(pageName) !== index);
+  if (sharedPageName) throw new Error(`Two images in ${imageDir} are both named "${sharedPageName}"; rename or remove one.`);
+  return imageNames;
 }
 
 function pageTextPath(pagesDir: string, imageName: string): string {
