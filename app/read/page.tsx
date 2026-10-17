@@ -438,7 +438,9 @@ function ReaderContent({
       ArrowRight: audioNext,
       ArrowLeft: audioPrev,
       ArrowDown: audioReplay,
+      // The same JIS key types "\" on Windows and "_" on macOS.
       '\\': audioPlaySub,
+      _: audioPlaySub,
       b: bookmarkPlayingSentence,
       B: bookmarkPlayingSentence,
     };
