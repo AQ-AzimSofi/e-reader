@@ -66,6 +66,10 @@ npx tsx scripts/kindle/page-turner.ts --interval 3 --screenshot-dir "$env:USERPR
 - Numbering continues after the highest-numbered PNG already in the folder (other
   files are ignored), so running again into the same folder appends. It never
   overwrites; a name collision stops the run
+- Resuming: when the folder already has screenshots, the run assumes the reader is
+  still on the last saved page and does not save it again. Ctrl+C leaves the reader
+  exactly there, so just rerun. If you moved the reader in between, go back to the
+  last saved page first
 - Use one folder per book, outside the repo. A relative path is resolved from the
   directory you run the command in
 - Keep the Chrome window visible: not minimized, with the book tab in front. Chrome
@@ -135,5 +139,6 @@ for the page to render and retry; if it persists, update `READER_SELECTORS`.
 
 ### Screenshot timeouts
 
-The book tab was hidden or the window minimized. Bring it to the front and rerun with
-the same `--screenshot-dir`; numbering picks up where it stopped.
+The book tab was hidden or the window minimized. The reader has already turned to a
+page that was not saved, so go back one page in the reader, bring the tab to the
+front, and rerun with the same `--screenshot-dir`; numbering picks up where it stopped.

@@ -189,8 +189,31 @@ async function turnPagesUntilStopped(
       return;
     }
     console.log(formatPosition(after));
-    if (options.screenshotDir) await saveScreenshot(page, options.screenshotDir);
+    if (options.screenshotDir) await saveTurnedPageScreenshot(page, options.screenshotDir);
   }
+}
+
+async function saveTurnedPageScreenshot(page: Page, screenshotDir: string): Promise<void> {
+  try {
+    await saveScreenshot(page, screenshotDir);
+  } catch (error) {
+    // A rerun treats the page the reader is on as already saved, so the reader has to be put back first.
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`Could not save the page just turned to (${reason}). Go back one page in the reader before rerunning, or that page will be missing.`);
+  }
+}
+
+async function startScreenshots(page: Page, screenshotDir: string): Promise<void> {
+  await mkdir(screenshotDir, { recursive: true });
+  console.log(`Saving a screenshot of each page to ${path.resolve(screenshotDir)}`);
+  const lastScreenshotNumber = await findLastScreenshotNumber(screenshotDir);
+  // A resumed run starts on the page the previous run saved last, so saving it again would duplicate that page.
+  if (lastScreenshotNumber > 0) {
+    console.log(`Resuming after ${String(lastScreenshotNumber).padStart(4, '0')}.png; the current page is taken to be that one and is not saved again.`);
+    return;
+  }
+  // The direction probe has already returned to the start page, so this captures the page the run begins on.
+  await saveScreenshot(page, screenshotDir);
 }
 
 async function runPageTurner(page: Page, options: CliOptions): Promise<void> {
@@ -202,12 +225,7 @@ async function runPageTurner(page: Page, options: CliOptions): Promise<void> {
   const nextKey = NEXT_KEY_BY_DIRECTION[direction];
   console.log(`${formatPosition(start)} - ${direction}, next page = ${nextKey}, every ${options.intervalMs / 1000}s. Ctrl+C to stop.`);
 
-  if (options.screenshotDir) {
-    await mkdir(options.screenshotDir, { recursive: true });
-    console.log(`Saving a screenshot of each page to ${path.resolve(options.screenshotDir)}`);
-    // The direction probe has already returned to the start page, so this captures the page the run begins on.
-    await saveScreenshot(page, options.screenshotDir);
-  }
+  if (options.screenshotDir) await startScreenshots(page, options.screenshotDir);
 
   const stopController = new AbortController();
   process.once('SIGINT', () => stopController.abort());
