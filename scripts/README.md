@@ -133,7 +133,8 @@ npx tsx scripts/kindle/page-turner.ts --interval 30
 ```
 
 Flags: `--interval <secs>` (default 30), `--cdp <url>` (default
-`http://127.0.0.1:9222`), `--direction rtl|ltr` (default: probed). Ctrl+C stops.
+`http://127.0.0.1:9222`), `--direction rtl|ltr` (default: probed),
+`--screenshot-dir <dir>` (default: off). Ctrl+C stops.
 
 Notes:
 
@@ -149,6 +150,11 @@ Notes:
   `READER_SELECTORS` in the script
 - It stops when a key press no longer changes the page: the end of the book, or
   the reader stopped responding
+- With `--screenshot-dir`, the starting page and every page after a turn are saved
+  as viewport PNGs (`0001.png`, `0002.png`, ...) once the page images finish
+  loading. Numbering continues from the files already in the directory, so a
+  rerun appends and never overwrites. Keep the book tab visible: Chromium can
+  stall screenshots of a background tab or minimized window
 
 ## Virtual Environment Notes
 
