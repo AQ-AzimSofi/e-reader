@@ -8,7 +8,7 @@
  * horizontal ones with ArrowRight, so the direction is probed once at startup.
  *
  * Usage: npx tsx scripts/kindle/page-turner.ts [--interval 30] [--cdp http://127.0.0.1:9222] [--direction rtl|ltr] [--screenshot-dir <dir>]
- * See scripts/README.md for launching Chromium and tunnelling to a remote one.
+ * See scripts/kindle/README.md for launching Chrome and tunnelling to a remote one.
  */
 
 import { parseArgs } from 'node:util';
