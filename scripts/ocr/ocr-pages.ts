@@ -301,5 +301,6 @@ async function main(): Promise<void> {
 
 main().catch((error: unknown) => {
   console.error(describeError(error));
-  process.exit(1);
+  // process.exit() while Gemini's sockets are still closing trips a libuv assertion on Windows; let the event loop drain instead.
+  process.exitCode = 1;
 });
