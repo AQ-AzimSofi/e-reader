@@ -115,6 +115,11 @@ Notes:
 - Manifest cue indices are `PlayableUnit.globalIndex`; `null` falls back to TTS
 - Rephrased text has no recording, so `sub` playback stays on TTS
 
+## Kindle Page Turner (`kindle/`)
+
+Turns Kindle Cloud Reader pages on a timer and can save a screenshot of each page.
+See [kindle/README.md](./kindle/README.md).
+
 ## Virtual Environment Notes
 
 **Important:** The `venv/` directory should NOT be committed to git. It's already in `.gitignore`.
