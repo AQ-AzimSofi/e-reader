@@ -115,6 +115,41 @@ Notes:
 - Manifest cue indices are `PlayableUnit.globalIndex`; `null` falls back to TTS
 - Rephrased text has no recording, so `sub` playback stays on TTS
 
+## Kindle Page Turner (`kindle/`)
+
+Turns Kindle Cloud Reader pages on a timer in a Chromium you are already signed in
+to. It attaches over CDP instead of launching a browser, so the session, cookies and
+open book stay yours.
+
+```bash
+# 1. On the browser machine, start Chromium with remote debugging (once per launch)
+chromium --remote-debugging-port=9222 --user-data-dir="$HOME/.kindle-chromium"
+
+# 2. If the script runs on another machine, tunnel the port instead of exposing it
+ssh -N -L 9222:127.0.0.1:9222 user@linux-host
+
+# 3. Open a book at read.amazon.co.jp, then
+npx tsx scripts/kindle/page-turner.ts --interval 30
+```
+
+Flags: `--interval <secs>` (default 30), `--cdp <url>` (default
+`http://127.0.0.1:9222`), `--direction rtl|ltr` (default: probed). Ctrl+C stops.
+
+Notes:
+
+- Never bind the debugging port to a public interface. Anyone who reaches it
+  controls the signed-in browser, Amazon account included
+- Chrome 136+ ignores `--remote-debugging-port` on the default profile, hence
+  `--user-data-dir`. Sign in once in that profile and it persists
+- Vertical Japanese books advance with ArrowLeft, horizontal ones with ArrowRight.
+  The script presses ArrowLeft once at startup, checks whether the location went
+  up, and steps back, so you see one quick flicker
+- Page turns are detected from the footer location (`位置12/2218`) and the
+  `#kr-renderer` page images. If Amazon changes the reader, update
+  `READER_SELECTORS` in the script
+- It stops when a key press no longer changes the page: the end of the book, or
+  the reader stopped responding
+
 ## Virtual Environment Notes
 
 **Important:** The `venv/` directory should NOT be committed to git. It's already in `.gitignore`.
