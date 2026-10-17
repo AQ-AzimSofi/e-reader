@@ -103,8 +103,12 @@ npx tsx scripts/kindle/page-turner.ts --interval 30
 ## How It Works
 
 - Vertical Japanese books advance with ArrowLeft, horizontal ones with ArrowRight.
-  Unless `--direction` is given, the script presses ArrowLeft once at startup,
-  checks whether the location went up, and steps back, so you see one quick flicker
+  Unless `--direction` is given, the script presses ArrowLeft at startup, checks
+  whether the location went up or down, and steps back, so you see a quick flicker
+- If the location stays the same or cannot be read (the cover shares location 1
+  with the next page), it also probes ArrowRight and compares the two neighbouring
+  pages. On the first page of a book the key that cannot move waits up to 10 seconds
+  first. If it still cannot tell, it stops and asks for `--direction`
 - Page turns are detected from the footer location (`位置12/2218`) and the
   `#kr-renderer` page images. If Amazon changes the reader, update
   `READER_SELECTORS` in `page-turner.ts`

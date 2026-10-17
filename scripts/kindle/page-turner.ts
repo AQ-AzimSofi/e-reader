@@ -5,7 +5,7 @@
  * Attaches over CDP to a running Chromium (started with --remote-debugging-port),
  * finds the open read.amazon.* book tab, and presses the arrow key that means
  * "next page" for that book. Japanese vertical books advance with ArrowLeft and
- * horizontal ones with ArrowRight, so the direction is probed once at startup.
+ * horizontal ones with ArrowRight, so the direction is probed at startup.
  *
  * Usage: npx tsx scripts/kindle/page-turner.ts [--interval 30] [--cdp http://127.0.0.1:9222] [--direction rtl|ltr] [--screenshot-dir <dir>]
  * See scripts/kindle/README.md for launching Chrome and tunnelling to a remote one.
@@ -132,14 +132,45 @@ async function pressAndWaitForChange(page: Page, key: string, before: ReaderSnap
   return waitForPageChange(page, before);
 }
 
-/** Probes with ArrowLeft and always returns to the starting page. */
+/** Presses probeKey, then returnKey to undo it; undefined when probeKey does not move the reader. */
+async function probeAndReturn(
+  page: Page,
+  start: ReaderSnapshot,
+  keys: { probeKey: string; returnKey: string },
+): Promise<ReaderSnapshot | undefined> {
+  const afterProbe = await pressAndWaitForChange(page, keys.probeKey, start);
+  if (!afterProbe) return undefined;
+  const backAtStart = await pressAndWaitForChange(page, keys.returnKey, afterProbe);
+  if (!backAtStart) {
+    throw new Error(`${keys.returnKey} did not undo the direction probe, so the reader may be one page off. Go back to the starting page and rerun with --direction rtl or ltr.`);
+  }
+  return afterProbe;
+}
+
+/** 'rtl' when ArrowLeft's page is further into the book than the other page, 'ltr' when earlier, undefined when the footer cannot tell. */
+function directionFromLocations(leftPage: ReaderSnapshot, otherPage: ReaderSnapshot): Direction | undefined {
+  const leftLocation = leftPage.position?.current;
+  const otherLocation = otherPage.position?.current;
+  if (leftLocation === undefined || otherLocation === undefined || leftLocation === otherLocation) return undefined;
+  return leftLocation > otherLocation ? 'rtl' : 'ltr';
+}
+
+/** Probes ArrowLeft, and ArrowRight too when that is not enough; always returns to the starting page. */
 async function detectDirection(page: Page, start: ReaderSnapshot): Promise<Direction> {
-  const afterProbe = await pressAndWaitForChange(page, NEXT_KEY_BY_DIRECTION.rtl, start);
-  if (!afterProbe) return 'ltr';
-  await pressAndWaitForChange(page, NEXT_KEY_BY_DIRECTION.ltr, afterProbe);
-  // An unchanged location still counts as forward: the cover and the page after it share location 1.
-  const movedBackward = (afterProbe.position?.current ?? 0) < (start.position?.current ?? 0);
-  return movedBackward ? 'ltr' : 'rtl';
+  const leftProbeKeys = { probeKey: NEXT_KEY_BY_DIRECTION.rtl, returnKey: NEXT_KEY_BY_DIRECTION.ltr };
+  const afterLeft = await probeAndReturn(page, start, leftProbeKeys);
+  // From the first page only the forward key moves.
+  if (!afterLeft) return 'ltr';
+  const directionFromStart = directionFromLocations(afterLeft, start);
+  if (directionFromStart) return directionFromStart;
+
+  // Unchanged or unreadable location (the cover shares location 1 with the next page): compare against the other neighbour.
+  const rightProbeKeys = { probeKey: NEXT_KEY_BY_DIRECTION.ltr, returnKey: NEXT_KEY_BY_DIRECTION.rtl };
+  const afterRight = await probeAndReturn(page, start, rightProbeKeys);
+  if (!afterRight) return 'rtl';
+  const directionFromNeighbours = directionFromLocations(afterLeft, afterRight);
+  if (directionFromNeighbours) return directionFromNeighbours;
+  throw new Error('Could not tell from the footer location which arrow key turns forward. Rerun with --direction rtl or ltr.');
 }
 
 function formatPosition(snapshot: ReaderSnapshot): string {
