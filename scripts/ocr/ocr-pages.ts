@@ -8,7 +8,8 @@
  * blank line between paragraphs.
  *
  * Requests go to the free GEMINI_API_KEY* keys first. GEMINI_API_KEY_PAID is used only once
- * every free key has run out of its daily quota for the model.
+ * every free key has run out of its daily quota for the model or been rejected.
+ * Rate limits, server errors and blocked replies are retried; other request errors fail the page at once.
  *
  * Usage: npx tsx scripts/ocr/ocr-pages.ts <image-dir> [--out-dir <dir>] [--model gemini-3.5-flash] [--concurrency <n>]
  *
@@ -22,7 +23,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { GoogleGenAI } from '@google/genai';
+import { ApiError, GoogleGenAI } from '@google/genai';
 import * as dotenv from 'dotenv';
 
 dotenv.config({ path: [path.join(process.cwd(), '.env.local'), path.join(process.cwd(), '.env')] });
@@ -70,8 +71,8 @@ interface ApiKey {
 interface KeyPool {
   freeKeys: ApiKey[];
   paidKey?: ApiKey;
-  // Free keys out of daily quota, skipped for the rest of the run.
-  exhaustedFreeKeys: Set<ApiKey>;
+  // Free keys out of daily quota or rejected, skipped for the rest of the run.
+  retiredFreeKeys: Set<ApiKey>;
 }
 
 interface OcrContext {
@@ -130,33 +131,42 @@ function createKeyPool(): KeyPool {
   if (freeKeys.length === 0 && !paidKey) {
     throw new Error(`No Gemini API key found. Set ${FREE_API_KEY_ENV_NAMES.join(' / ')} in .env.local or ${PAID_API_KEY_ENV_NAME}.`);
   }
-  return { freeKeys, paidKey, exhaustedFreeKeys: new Set() };
+  return { freeKeys, paidKey, retiredFreeKeys: new Set() };
 }
 
 function pickKey(keyPool: KeyPool, spreadIndex: number): ApiKey | undefined {
-  const availableFreeKeys = keyPool.freeKeys.filter((key) => !keyPool.exhaustedFreeKeys.has(key));
+  const availableFreeKeys = keyPool.freeKeys.filter((key) => !keyPool.retiredFreeKeys.has(key));
   if (availableFreeKeys.length === 0) return keyPool.paidKey;
   return availableFreeKeys[spreadIndex % availableFreeKeys.length];
 }
 
-function isDailyQuotaError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  // A per-minute limit clears by itself; a per-day one lasts until the quota resets, so that key is done for this run.
-  return message.includes('RESOURCE_EXHAUSTED') && message.includes('PerDay');
+/** Why the key that made the request can serve nothing more this run, or undefined when the error is not about the key. */
+function describeUnusableKey(error: unknown, model: string): string | undefined {
+  if (!(error instanceof ApiError)) return undefined;
+  // A per-minute limit clears by itself; a per-day quota or a rejected key does not.
+  if (error.status === 429 && error.message.includes('PerDay')) return `out of daily quota for ${model}`;
+  if (error.status === 403 || error.message.includes('API_KEY_INVALID')) return `rejected (${describeError(error)})`;
+  return undefined;
+}
+
+function isRetryable(error: unknown): boolean {
+  // Network failures and blocked (empty) replies are not ApiErrors and can pass on a retry; any other 4xx, such as an unknown model, cannot.
+  if (!(error instanceof ApiError)) return true;
+  return error.status === 429 || error.status >= 500;
 }
 
 function describeFallback(keyPool: KeyPool): string {
-  const remainingFreeKeyCount = keyPool.freeKeys.length - keyPool.exhaustedFreeKeys.size;
+  const remainingFreeKeyCount = keyPool.freeKeys.length - keyPool.retiredFreeKeys.size;
   if (remainingFreeKeyCount > 0) return `${remainingFreeKeyCount} free key(s) left`;
   if (keyPool.paidKey) return `switching to ${keyPool.paidKey.envName}`;
   return `no ${PAID_API_KEY_ENV_NAME} to fall back to`;
 }
 
-function markExhausted(keyPool: KeyPool, key: ApiKey, model: string): void {
-  // Concurrent workers can hit the same exhausted key; report it once.
-  if (keyPool.exhaustedFreeKeys.has(key)) return;
-  keyPool.exhaustedFreeKeys.add(key);
-  console.log(`  ${key.envName} is out of daily quota for ${model}; ${describeFallback(keyPool)}`);
+function retireKey(keyPool: KeyPool, key: ApiKey, reason: string): void {
+  // Concurrent workers can hit the same key; report it once.
+  if (keyPool.retiredFreeKeys.has(key)) return;
+  keyPool.retiredFreeKeys.add(key);
+  console.log(`  ${key.envName} is ${reason}; ${describeFallback(keyPool)}`);
 }
 
 async function listImageNames(imageDir: string): Promise<string[]> {
@@ -194,16 +204,18 @@ async function transcribeImage(client: GoogleGenAI, model: string, imagePath: st
 async function transcribePage(context: OcrContext, job: PageJob, attemptNumber = 1): Promise<string> {
   // Each retry moves to the next key, so one key's transient errors do not sink the page.
   const key = pickKey(context.keyPool, job.keyIndex + attemptNumber - 1);
-  if (!key) throw new Error(`every free key is out of daily quota for ${context.model} and ${PAID_API_KEY_ENV_NAME} is not set`);
+  if (!key) throw new Error(`no usable free key left for ${context.model} and ${PAID_API_KEY_ENV_NAME} is not set`);
   try {
     return await transcribeImage(key.client, context.model, path.join(context.imageDir, job.imageName));
   } catch (error) {
     const isFreeKey = key !== context.keyPool.paidKey;
-    if (isFreeKey && isDailyQuotaError(error)) {
-      markExhausted(context.keyPool, key, context.model);
+    const unusableKeyReason = isFreeKey ? describeUnusableKey(error, context.model) : undefined;
+    if (unusableKeyReason) {
+      retireKey(context.keyPool, key, unusableKeyReason);
       return transcribePage(context, job, attemptNumber);
     }
-    if (attemptNumber >= MAX_ATTEMPTS) throw error;
+    const isLastAttempt = attemptNumber >= MAX_ATTEMPTS;
+    if (isLastAttempt || !isRetryable(error)) throw error;
     const waitSecs = Math.min(MAX_RETRY_WAIT_SECS, attemptNumber * 10);
     console.log(`  ${job.imageName}: attempt ${attemptNumber} failed (${describeError(error)}), retrying in ${waitSecs}s`);
     await sleep(waitSecs * 1000);
