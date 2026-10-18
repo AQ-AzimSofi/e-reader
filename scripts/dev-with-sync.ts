@@ -1,12 +1,13 @@
 #!/usr/bin/env npx tsx
 /**
- * Dev wrapper that syncs the local DB with prod on startup and on Ctrl+C.
+ * Dev wrapper that starts the local DB container, syncs the local DB with
+ * prod on startup, and syncs again on Ctrl+C.
  *
  * Usage:
  *   npx tsx scripts/dev-with-sync.ts            # next dev on default port
  *   npx tsx scripts/dev-with-sync.ts --lan      # next dev on LAN host/port
  *
- * Skip the sync entirely with `npm run dev:nosync`.
+ * `npm run dev:nosync` runs plain next dev: no container start and no sync.
  * Press Ctrl+C twice to skip the shutdown sync if it hangs.
  */
 
@@ -26,6 +27,7 @@ function parseTimeoutMs(raw: string | undefined, defaultMs: number): number {
 const SYNC_TIMEOUT_MS = parseTimeoutMs(process.env.SYNC_TIMEOUT_MS, 60_000);
 const SHUTDOWN_GRACE_MS = 5_000;
 const CONNECT_TIMEOUT_MS = 5_000;
+const DB_START_TIMEOUT_SECS = 60;
 
 function nextDevArgs(): string[] {
   const lan = process.argv.includes('--lan');
@@ -46,6 +48,15 @@ function summarize(label: string, results: SyncResult[]) {
     const failedSuffix = r.failed > 0 ? `, ${r.failed} failed` : '';
     console.log(`  ${r.table}: ${r.rows} rows ${r.direction}${skippedSuffix}${failedSuffix}`);
   }
+}
+
+// Node reports a refused connection to a dual-stack host (::1 and 127.0.0.1)
+// as an AggregateError whose own message is empty; the causes live in .errors.
+function describeError(err: unknown): string {
+  if (err instanceof AggregateError) {
+    return err.errors.map(describeError).join('; ');
+  }
+  return err instanceof Error ? err.message : String(err);
 }
 
 async function runSync(label: string): Promise<void> {
@@ -83,7 +94,7 @@ async function runSync(label: string): Promise<void> {
     if (timedOut) {
       console.warn(`[sync] ${label} timed out after ${SYNC_TIMEOUT_MS}ms`);
     } else {
-      console.warn(`[sync] ${label} failed: ${err instanceof Error ? err.message : String(err)}`);
+      console.warn(`[sync] ${label} failed: ${describeError(err)}`);
     }
     console.warn('[sync] continuing without sync');
   } finally {
@@ -93,6 +104,31 @@ async function runSync(label: string): Promise<void> {
       await local.end().catch(() => {});
     }
   }
+}
+
+// `--wait` blocks until the compose healthcheck passes over TCP, so the
+// startup sync does not race a Postgres that is still booting. A missing
+// Docker only costs the sync, which reports a refused connection and continues.
+function startLocalDb(): Promise<void> {
+  return new Promise(done => {
+    console.log('[dev-with-sync] starting local db container...');
+    const compose = spawn(
+      'docker',
+      ['compose', 'up', '-d', '--wait', '--wait-timeout', String(DB_START_TIMEOUT_SECS), 'db'],
+      { stdio: 'inherit' }
+    );
+    compose.on('error', err => {
+      console.warn(`[dev-with-sync] could not run docker: ${err.message}`);
+      done();
+    });
+    compose.on('exit', (code, signal) => {
+      if (code !== 0) {
+        const reason = signal ? `signal ${signal}` : `code ${code}`;
+        console.warn(`[dev-with-sync] docker compose up exited with ${reason}, continuing`);
+      }
+      done();
+    });
+  });
 }
 
 function spawnNextDev(): ChildProcess {
@@ -107,6 +143,7 @@ function spawnNextDev(): ChildProcess {
 }
 
 async function main() {
+  await startLocalDb();
   await runSync('startup');
 
   const child = spawnNextDev();

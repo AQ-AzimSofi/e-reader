@@ -65,10 +65,10 @@ export const TABLES: TableConfig[] = [
   },
   {
     name: '"UserBookmark"',
-    // userId is technically nullable; Postgres treats NULLs as distinct in
-    // unique indexes, so legacy NULL rows would multiply on every sync. The
-    // Prisma schema sets a default of "default", so any row inserted via the
-    // app is safe — but backfill before sync if NULLs ever appear.
+    // userId is technically nullable, and a row-wise IN never matches a NULL,
+    // so a legacy NULL row is selected but never fetched and is reported as
+    // failed on every sync. The Prisma schema sets a default of "default", so
+    // any row inserted via the app is safe — but backfill if NULLs appear.
     conflictKey: { kind: 'composite', cols: ['bookId', 'userId'] },
     orderBy: '"updatedAt"',
     identity: { kind: 'column', col: 'id' },
@@ -120,17 +120,22 @@ async function getCount(client: Client, table: string): Promise<number | null> {
   }
 }
 
+// Only last-write-wins tables can propagate content edits, so only they need a
+// comparable timestamp; insert-only tables report NULL and are never "newer".
+// Millisecond precision matches what the pg driver round-trips: a local
+// timestamp(6) value with sub-ms digits can never be beaten by an upsert from
+// the driver, so comparing at microseconds would flag it as newer forever.
+function syncTimestampMsExpr(table: TableConfig): string {
+  if (table.strategy.kind === 'insert-only') return 'NULL';
+  return `floor(extract(epoch from ${table.strategy.timestampCol}) * 1000)`;
+}
+
 function identityQuery(table: TableConfig): string {
   const bare = stripQuotes(table.name);
   const keyExpr = table.identity.kind === 'composite'
     ? `${table.identity.cols[0]} || '${table.identity.sep}' || ${table.identity.cols[1]}`
     : `${table.identity.col}::text`;
-  // Only last-write-wins tables can propagate content edits, so only they need a
-  // comparable timestamp; insert-only tables report NULL and are never "newer".
-  const tsExpr = table.strategy.kind === 'last-write-wins'
-    ? `extract(epoch from ${table.strategy.timestampCol})`
-    : 'NULL';
-  return `SELECT ${keyExpr} as key, ${tsExpr} as updated_at FROM "${bare}"`;
+  return `SELECT ${keyExpr} as key, ${syncTimestampMsExpr(table)} as updated_at FROM "${bare}"`;
 }
 
 async function getIdentitySnapshots(
@@ -261,6 +266,83 @@ function isConnectionClosed(err: unknown): boolean {
     || msg.includes('Client has encountered a connection error');
 }
 
+type KeySnapshot = Map<string, { keyValues: unknown[]; updatedAtMs: number | null }>;
+
+function keySnapshotQuery(table: TableConfig): string {
+  const keyCols = conflictColumns(table.conflictKey).map(quoteIdent).join(', ');
+  return `SELECT ${keyCols}, ${syncTimestampMsExpr(table)} as sync_ts FROM ${table.name}`;
+}
+
+async function getKeySnapshot(client: Client, table: TableConfig): Promise<KeySnapshot> {
+  const keyCols = conflictColumns(table.conflictKey);
+  const result = await client.query(keySnapshotQuery(table));
+  return new Map(
+    result.rows.map((row: Record<string, unknown>) => {
+      const keyValues = keyCols.map(c => row[c]);
+      const updatedAtMs = row.sync_ts === null ? null : Number(row.sync_ts);
+      return [JSON.stringify(keyValues), { keyValues, updatedAtMs }];
+    })
+  );
+}
+
+// Ship only rows the target lacks or holds an older copy of. Sending every row
+// and letting the upsert's WHERE discard it moved ~17 MB of text_entries each
+// way on every sync, which alone took close to the dev wrapper's timeout.
+function selectKeysToTransfer(
+  source: KeySnapshot,
+  target: KeySnapshot,
+  table: TableConfig
+): unknown[][] {
+  const canOverwrite = table.strategy.kind === 'last-write-wins';
+  const keys: unknown[][] = [];
+  for (const [key, sourceEntry] of source) {
+    const targetEntry = target.get(key);
+    if (targetEntry === undefined) {
+      keys.push(sourceEntry.keyValues);
+      continue;
+    }
+    if (!canOverwrite) continue;
+    if (sourceEntry.updatedAtMs === null || targetEntry.updatedAtMs === null) continue;
+    if (sourceEntry.updatedAtMs > targetEntry.updatedAtMs) keys.push(sourceEntry.keyValues);
+  }
+  return keys;
+}
+
+const FETCH_KEYS_CHUNK = 500;
+
+async function fetchRowsByKey(
+  client: Client,
+  table: TableConfig,
+  keys: unknown[][]
+): Promise<Record<string, unknown>[]> {
+  const keyCols = conflictColumns(table.conflictKey);
+  const keyList = keyCols.map(quoteIdent).join(', ');
+  const rows: Record<string, unknown>[] = [];
+  for (let start = 0; start < keys.length; start += FETCH_KEYS_CHUNK) {
+    const chunk = keys.slice(start, start + FETCH_KEYS_CHUNK);
+    const tuples = chunk
+      .map((_, rowI) => `(${keyCols.map((_, colI) => `$${rowI * keyCols.length + colI + 1}`).join(', ')})`)
+      .join(', ');
+    const result = await client.query(
+      `SELECT * FROM ${table.name} WHERE (${keyList}) IN (${tuples}) ORDER BY ${table.orderBy}`,
+      chunk.flat()
+    );
+    rows.push(...result.rows);
+  }
+  return rows;
+}
+
+// Snapshot and fetch failures abort the whole sync; name the table and
+// direction so the one-line report says where it stopped.
+async function withSyncContext<T>(context: string, step: Promise<T>): Promise<T> {
+  try {
+    return await step;
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(`[sync-core] ${context}: ${reason}`, { cause: err });
+  }
+}
+
 function rowIdentityLog(table: TableConfig, row: Record<string, unknown>): string {
   const cols = conflictColumns(table.conflictKey);
   return cols.map(c => `${c}=${row[c]}`).join(',');
@@ -286,17 +368,29 @@ export async function syncDirection(
     );
   }
 
-  const sourceRows = await source.query(
-    `SELECT * FROM ${table.name} ORDER BY ${table.orderBy}`
+  const context = `${tableName} ${direction}`;
+  const [sourceSnapshot, targetSnapshot] = await withSyncContext(
+    `${context} snapshot`,
+    Promise.all([getKeySnapshot(source, table), getKeySnapshot(target, table)])
   );
-  if (sourceRows.rows.length === 0) return { table: tableName, rows: 0, skipped: 0, failed: 0, direction };
+  const keys = selectKeysToTransfer(sourceSnapshot, targetSnapshot, table);
+  if (keys.length === 0) return { table: tableName, rows: 0, skipped: 0, failed: 0, direction };
+
+  const sourceRows = await withSyncContext(`${context} fetch`, fetchRowsByKey(source, table, keys));
+  const unfetchedCount = keys.length - sourceRows.length;
+  if (unfetchedCount > 0) {
+    console.error(
+      `  [ERR] ${table.name}: ${unfetchedCount} selected row(s) not returned by the source ` +
+      `(NULL in a conflict key column, or deleted mid-sync)`
+    );
+  }
 
   const singleRowSql = buildBatchUpsertSql(table, columns, 1);
   let rows = 0;
   let skipped = 0;
-  let failed = 0;
-  for (let start = 0; start < sourceRows.rows.length; start += BATCH_SIZE) {
-    const batch = sourceRows.rows.slice(start, start + BATCH_SIZE);
+  let failed = unfetchedCount;
+  for (let start = 0; start < sourceRows.length; start += BATCH_SIZE) {
+    const batch = sourceRows.slice(start, start + BATCH_SIZE);
     const sql = buildBatchUpsertSql(table, columns, batch.length);
     const values: unknown[] = [];
     for (const row of batch) {
