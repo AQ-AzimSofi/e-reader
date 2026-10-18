@@ -106,9 +106,9 @@ async function runSync(label: string): Promise<void> {
   }
 }
 
-// `--wait` blocks until the compose healthcheck passes, so the startup sync
-// never races a Postgres that is still booting. A missing Docker only costs
-// the sync, which already reports a refused connection and continues.
+// `--wait` blocks until the compose healthcheck passes over TCP, so the
+// startup sync does not race a Postgres that is still booting. A missing
+// Docker only costs the sync, which reports a refused connection and continues.
 function startLocalDb(): Promise<void> {
   return new Promise(done => {
     console.log('[dev-with-sync] starting local db container...');
