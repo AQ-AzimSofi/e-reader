@@ -65,10 +65,10 @@ export const TABLES: TableConfig[] = [
   },
   {
     name: '"UserBookmark"',
-    // userId is technically nullable; Postgres treats NULLs as distinct in
-    // unique indexes, so legacy NULL rows would multiply on every sync. The
-    // Prisma schema sets a default of "default", so any row inserted via the
-    // app is safe — but backfill before sync if NULLs ever appear.
+    // userId is technically nullable, and a row-wise IN never matches a NULL,
+    // so a legacy NULL row is selected but never fetched and is reported as
+    // failed on every sync. The Prisma schema sets a default of "default", so
+    // any row inserted via the app is safe — but backfill if NULLs appear.
     conflictKey: { kind: 'composite', cols: ['bookId', 'userId'] },
     orderBy: '"updatedAt"',
     identity: { kind: 'column', col: 'id' },
@@ -365,11 +365,18 @@ export async function syncDirection(
   if (keys.length === 0) return { table: tableName, rows: 0, skipped: 0, failed: 0, direction };
 
   const sourceRows = await fetchRowsByKey(source, table, keys);
+  const unfetchedCount = keys.length - sourceRows.length;
+  if (unfetchedCount > 0) {
+    console.error(
+      `  [ERR] ${table.name}: ${unfetchedCount} selected row(s) not returned by the source ` +
+      `(NULL in a conflict key column, or deleted mid-sync)`
+    );
+  }
 
   const singleRowSql = buildBatchUpsertSql(table, columns, 1);
   let rows = 0;
   let skipped = 0;
-  let failed = 0;
+  let failed = unfetchedCount;
   for (let start = 0; start < sourceRows.length; start += BATCH_SIZE) {
     const batch = sourceRows.slice(start, start + BATCH_SIZE);
     const sql = buildBatchUpsertSql(table, columns, batch.length);
