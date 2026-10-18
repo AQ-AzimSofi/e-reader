@@ -7,7 +7,7 @@
  *   npx tsx scripts/dev-with-sync.ts            # next dev on default port
  *   npx tsx scripts/dev-with-sync.ts --lan      # next dev on LAN host/port
  *
- * Skip the sync entirely with `npm run dev:nosync`.
+ * `npm run dev:nosync` runs plain next dev: no container start and no sync.
  * Press Ctrl+C twice to skip the shutdown sync if it hangs.
  */
 
