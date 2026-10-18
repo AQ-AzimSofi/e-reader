@@ -1,6 +1,7 @@
 #!/usr/bin/env npx tsx
 /**
- * Dev wrapper that syncs the local DB with prod on startup and on Ctrl+C.
+ * Dev wrapper that starts the local DB container, syncs the local DB with
+ * prod on startup, and syncs again on Ctrl+C.
  *
  * Usage:
  *   npx tsx scripts/dev-with-sync.ts            # next dev on default port
@@ -104,6 +105,24 @@ async function runSync(label: string): Promise<void> {
   }
 }
 
+// `--wait` blocks until the compose healthcheck passes, so the startup sync
+// never races a Postgres that is still booting. A missing Docker only costs
+// the sync, which already reports a refused connection and continues.
+function startLocalDb(): Promise<void> {
+  return new Promise(resolve => {
+    console.log('[dev-with-sync] starting local db container...');
+    const compose = spawn('docker', ['compose', 'up', '-d', '--wait', 'db'], { stdio: 'inherit' });
+    compose.on('error', err => {
+      console.warn(`[dev-with-sync] could not run docker: ${err.message}`);
+      resolve();
+    });
+    compose.on('exit', code => {
+      if (code !== 0) console.warn(`[dev-with-sync] docker compose up exited with code ${code}, continuing`);
+      resolve();
+    });
+  });
+}
+
 function spawnNextDev(): ChildProcess {
   // Spawn node with next's bin path directly so the child is a real Node
   // process (not cmd.exe on Windows). The terminal's Ctrl+C is broadcast to
@@ -116,6 +135,7 @@ function spawnNextDev(): ChildProcess {
 }
 
 async function main() {
+  await startLocalDb();
   await runSync('startup');
 
   const child = spawnNextDev();
