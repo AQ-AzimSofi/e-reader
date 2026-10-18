@@ -332,6 +332,17 @@ async function fetchRowsByKey(
   return rows;
 }
 
+// Snapshot and fetch failures abort the whole sync; name the table and
+// direction so the one-line report says where it stopped.
+async function withSyncContext<T>(context: string, step: Promise<T>): Promise<T> {
+  try {
+    return await step;
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(`[sync-core] ${context}: ${reason}`, { cause: err });
+  }
+}
+
 function rowIdentityLog(table: TableConfig, row: Record<string, unknown>): string {
   const cols = conflictColumns(table.conflictKey);
   return cols.map(c => `${c}=${row[c]}`).join(',');
@@ -357,14 +368,15 @@ export async function syncDirection(
     );
   }
 
-  const [sourceSnapshot, targetSnapshot] = await Promise.all([
-    getKeySnapshot(source, table),
-    getKeySnapshot(target, table),
-  ]);
+  const context = `${tableName} ${direction}`;
+  const [sourceSnapshot, targetSnapshot] = await withSyncContext(
+    `${context} snapshot`,
+    Promise.all([getKeySnapshot(source, table), getKeySnapshot(target, table)])
+  );
   const keys = selectKeysToTransfer(sourceSnapshot, targetSnapshot, table);
   if (keys.length === 0) return { table: tableName, rows: 0, skipped: 0, failed: 0, direction };
 
-  const sourceRows = await fetchRowsByKey(source, table, keys);
+  const sourceRows = await withSyncContext(`${context} fetch`, fetchRowsByKey(source, table, keys));
   const unfetchedCount = keys.length - sourceRows.length;
   if (unfetchedCount > 0) {
     console.error(
