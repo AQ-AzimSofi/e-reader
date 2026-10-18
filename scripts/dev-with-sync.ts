@@ -27,6 +27,7 @@ function parseTimeoutMs(raw: string | undefined, defaultMs: number): number {
 const SYNC_TIMEOUT_MS = parseTimeoutMs(process.env.SYNC_TIMEOUT_MS, 60_000);
 const SHUTDOWN_GRACE_MS = 5_000;
 const CONNECT_TIMEOUT_MS = 5_000;
+const DB_START_TIMEOUT_SECS = 60;
 
 function nextDevArgs(): string[] {
   const lan = process.argv.includes('--lan');
@@ -111,13 +112,20 @@ async function runSync(label: string): Promise<void> {
 function startLocalDb(): Promise<void> {
   return new Promise(resolve => {
     console.log('[dev-with-sync] starting local db container...');
-    const compose = spawn('docker', ['compose', 'up', '-d', '--wait', 'db'], { stdio: 'inherit' });
+    const compose = spawn(
+      'docker',
+      ['compose', 'up', '-d', '--wait', '--wait-timeout', String(DB_START_TIMEOUT_SECS), 'db'],
+      { stdio: 'inherit' }
+    );
     compose.on('error', err => {
       console.warn(`[dev-with-sync] could not run docker: ${err.message}`);
       resolve();
     });
-    compose.on('exit', code => {
-      if (code !== 0) console.warn(`[dev-with-sync] docker compose up exited with code ${code}, continuing`);
+    compose.on('exit', (code, signal) => {
+      if (code !== 0) {
+        const reason = signal ? `signal ${signal}` : `code ${code}`;
+        console.warn(`[dev-with-sync] docker compose up exited with ${reason}, continuing`);
+      }
       resolve();
     });
   });
