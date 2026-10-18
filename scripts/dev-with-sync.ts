@@ -48,6 +48,15 @@ function summarize(label: string, results: SyncResult[]) {
   }
 }
 
+// Node reports a refused connection to a dual-stack host (::1 and 127.0.0.1)
+// as an AggregateError whose own message is empty; the causes live in .errors.
+function describeError(err: unknown): string {
+  if (err instanceof AggregateError) {
+    return err.errors.map(describeError).join('; ');
+  }
+  return err instanceof Error ? err.message : String(err);
+}
+
 async function runSync(label: string): Promise<void> {
   const prodUrl = process.env.PROD_DATABASE_URL;
   const localUrl = process.env.DATABASE_URL;
@@ -83,7 +92,7 @@ async function runSync(label: string): Promise<void> {
     if (timedOut) {
       console.warn(`[sync] ${label} timed out after ${SYNC_TIMEOUT_MS}ms`);
     } else {
-      console.warn(`[sync] ${label} failed: ${err instanceof Error ? err.message : String(err)}`);
+      console.warn(`[sync] ${label} failed: ${describeError(err)}`);
     }
     console.warn('[sync] continuing without sync');
   } finally {
