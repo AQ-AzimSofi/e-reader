@@ -110,7 +110,7 @@ async function runSync(label: string): Promise<void> {
 // never races a Postgres that is still booting. A missing Docker only costs
 // the sync, which already reports a refused connection and continues.
 function startLocalDb(): Promise<void> {
-  return new Promise(resolve => {
+  return new Promise(done => {
     console.log('[dev-with-sync] starting local db container...');
     const compose = spawn(
       'docker',
@@ -119,14 +119,14 @@ function startLocalDb(): Promise<void> {
     );
     compose.on('error', err => {
       console.warn(`[dev-with-sync] could not run docker: ${err.message}`);
-      resolve();
+      done();
     });
     compose.on('exit', (code, signal) => {
       if (code !== 0) {
         const reason = signal ? `signal ${signal}` : `code ${code}`;
         console.warn(`[dev-with-sync] docker compose up exited with ${reason}, continuing`);
       }
-      resolve();
+      done();
     });
   });
 }
