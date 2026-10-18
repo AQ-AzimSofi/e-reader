@@ -120,17 +120,22 @@ async function getCount(client: Client, table: string): Promise<number | null> {
   }
 }
 
+// Only last-write-wins tables can propagate content edits, so only they need a
+// comparable timestamp; insert-only tables report NULL and are never "newer".
+// Millisecond precision matches what the pg driver round-trips: a local
+// timestamp(6) value with sub-ms digits can never be beaten by an upsert from
+// the driver, so comparing at microseconds would flag it as newer forever.
+function syncTimestampMsExpr(table: TableConfig): string {
+  if (table.strategy.kind === 'insert-only') return 'NULL';
+  return `floor(extract(epoch from ${table.strategy.timestampCol}) * 1000)`;
+}
+
 function identityQuery(table: TableConfig): string {
   const bare = stripQuotes(table.name);
   const keyExpr = table.identity.kind === 'composite'
     ? `${table.identity.cols[0]} || '${table.identity.sep}' || ${table.identity.cols[1]}`
     : `${table.identity.col}::text`;
-  // Only last-write-wins tables can propagate content edits, so only they need a
-  // comparable timestamp; insert-only tables report NULL and are never "newer".
-  const tsExpr = table.strategy.kind === 'last-write-wins'
-    ? `extract(epoch from ${table.strategy.timestampCol})`
-    : 'NULL';
-  return `SELECT ${keyExpr} as key, ${tsExpr} as updated_at FROM "${bare}"`;
+  return `SELECT ${keyExpr} as key, ${syncTimestampMsExpr(table)} as updated_at FROM "${bare}"`;
 }
 
 async function getIdentitySnapshots(
@@ -265,10 +270,7 @@ type KeySnapshot = Map<string, { keyValues: unknown[]; updatedAtMs: number | nul
 
 function keySnapshotQuery(table: TableConfig): string {
   const keyCols = conflictColumns(table.conflictKey).map(quoteIdent).join(', ');
-  const tsExpr = table.strategy.kind === 'last-write-wins'
-    ? `extract(epoch from ${table.strategy.timestampCol})`
-    : 'NULL';
-  return `SELECT ${keyCols}, ${tsExpr} as sync_ts FROM ${table.name}`;
+  return `SELECT ${keyCols}, ${syncTimestampMsExpr(table)} as sync_ts FROM ${table.name}`;
 }
 
 async function getKeySnapshot(client: Client, table: TableConfig): Promise<KeySnapshot> {
@@ -277,10 +279,7 @@ async function getKeySnapshot(client: Client, table: TableConfig): Promise<KeySn
   return new Map(
     result.rows.map((row: Record<string, unknown>) => {
       const keyValues = keyCols.map(c => row[c]);
-      // Compare at millisecond precision: the pg driver serialises JS Dates
-      // with ms resolution, so a sub-ms difference can never win the upsert's
-      // timestamp check and would only be re-fetched and skipped every sync.
-      const updatedAtMs = row.sync_ts === null ? null : Math.floor(Number(row.sync_ts) * 1000);
+      const updatedAtMs = row.sync_ts === null ? null : Number(row.sync_ts);
       return [JSON.stringify(keyValues), { keyValues, updatedAtMs }];
     })
   );
