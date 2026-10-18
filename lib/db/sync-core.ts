@@ -261,6 +261,78 @@ function isConnectionClosed(err: unknown): boolean {
     || msg.includes('Client has encountered a connection error');
 }
 
+type KeySnapshot = Map<string, { keyValues: unknown[]; updatedAtMs: number | null }>;
+
+function keySnapshotQuery(table: TableConfig): string {
+  const keyCols = conflictColumns(table.conflictKey).map(quoteIdent).join(', ');
+  const tsExpr = table.strategy.kind === 'last-write-wins'
+    ? `extract(epoch from ${table.strategy.timestampCol})`
+    : 'NULL';
+  return `SELECT ${keyCols}, ${tsExpr} as sync_ts FROM ${table.name}`;
+}
+
+async function getKeySnapshot(client: Client, table: TableConfig): Promise<KeySnapshot> {
+  const keyCols = conflictColumns(table.conflictKey);
+  const result = await client.query(keySnapshotQuery(table));
+  return new Map(
+    result.rows.map((row: Record<string, unknown>) => {
+      const keyValues = keyCols.map(c => row[c]);
+      // Compare at millisecond precision: the pg driver serialises JS Dates
+      // with ms resolution, so a sub-ms difference can never win the upsert's
+      // timestamp check and would only be re-fetched and skipped every sync.
+      const updatedAtMs = row.sync_ts === null ? null : Math.floor(Number(row.sync_ts) * 1000);
+      return [JSON.stringify(keyValues), { keyValues, updatedAtMs }];
+    })
+  );
+}
+
+// Ship only rows the target lacks or holds an older copy of. Sending every row
+// and letting the upsert's WHERE discard it moved ~17 MB of text_entries each
+// way on every sync, which alone took close to the dev wrapper's timeout.
+function selectKeysToTransfer(
+  source: KeySnapshot,
+  target: KeySnapshot,
+  table: TableConfig
+): unknown[][] {
+  const canOverwrite = table.strategy.kind === 'last-write-wins';
+  const keys: unknown[][] = [];
+  for (const [key, sourceEntry] of source) {
+    const targetEntry = target.get(key);
+    if (targetEntry === undefined) {
+      keys.push(sourceEntry.keyValues);
+      continue;
+    }
+    if (!canOverwrite) continue;
+    if (sourceEntry.updatedAtMs === null || targetEntry.updatedAtMs === null) continue;
+    if (sourceEntry.updatedAtMs > targetEntry.updatedAtMs) keys.push(sourceEntry.keyValues);
+  }
+  return keys;
+}
+
+const FETCH_KEYS_CHUNK = 500;
+
+async function fetchRowsByKey(
+  client: Client,
+  table: TableConfig,
+  keys: unknown[][]
+): Promise<Record<string, unknown>[]> {
+  const keyCols = conflictColumns(table.conflictKey);
+  const keyList = keyCols.map(quoteIdent).join(', ');
+  const rows: Record<string, unknown>[] = [];
+  for (let start = 0; start < keys.length; start += FETCH_KEYS_CHUNK) {
+    const chunk = keys.slice(start, start + FETCH_KEYS_CHUNK);
+    const tuples = chunk
+      .map((_, rowI) => `(${keyCols.map((_, colI) => `$${rowI * keyCols.length + colI + 1}`).join(', ')})`)
+      .join(', ');
+    const result = await client.query(
+      `SELECT * FROM ${table.name} WHERE (${keyList}) IN (${tuples}) ORDER BY ${table.orderBy}`,
+      chunk.flat()
+    );
+    rows.push(...result.rows);
+  }
+  return rows;
+}
+
 function rowIdentityLog(table: TableConfig, row: Record<string, unknown>): string {
   const cols = conflictColumns(table.conflictKey);
   return cols.map(c => `${c}=${row[c]}`).join(',');
@@ -286,17 +358,21 @@ export async function syncDirection(
     );
   }
 
-  const sourceRows = await source.query(
-    `SELECT * FROM ${table.name} ORDER BY ${table.orderBy}`
-  );
-  if (sourceRows.rows.length === 0) return { table: tableName, rows: 0, skipped: 0, failed: 0, direction };
+  const [sourceSnapshot, targetSnapshot] = await Promise.all([
+    getKeySnapshot(source, table),
+    getKeySnapshot(target, table),
+  ]);
+  const keys = selectKeysToTransfer(sourceSnapshot, targetSnapshot, table);
+  if (keys.length === 0) return { table: tableName, rows: 0, skipped: 0, failed: 0, direction };
+
+  const sourceRows = await fetchRowsByKey(source, table, keys);
 
   const singleRowSql = buildBatchUpsertSql(table, columns, 1);
   let rows = 0;
   let skipped = 0;
   let failed = 0;
-  for (let start = 0; start < sourceRows.rows.length; start += BATCH_SIZE) {
-    const batch = sourceRows.rows.slice(start, start + BATCH_SIZE);
+  for (let start = 0; start < sourceRows.length; start += BATCH_SIZE) {
+    const batch = sourceRows.slice(start, start + BATCH_SIZE);
     const sql = buildBatchUpsertSql(table, columns, batch.length);
     const values: unknown[] = [];
     for (const row of batch) {
