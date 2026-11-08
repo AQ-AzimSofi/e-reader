@@ -5,6 +5,8 @@ import { CREATE_TABLES_SQL } from '@/lib/db/schema';
 const MIGRATIONS_SQL = `
   ALTER TABLE text_entries ADD COLUMN IF NOT EXISTS total_pages INT DEFAULT 0;
   ALTER TABLE text_entries ADD COLUMN IF NOT EXISTS total_characters INT DEFAULT 0;
+  -- Size the cached page counts were computed at; NULL means not yet counted.
+  ALTER TABLE text_entries ADD COLUMN IF NOT EXISTS content_bytes INT;
   -- Add updated_at with no default first so existing rows stay NULL, seed them
   -- from created_at (guarded by IS NULL so repeat init-db calls never overwrite
   -- real write times), then set the default for future inserts. A plain
