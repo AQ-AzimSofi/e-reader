@@ -39,9 +39,12 @@ BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/130.0 Safari/537.36"
 }
+FETCH_ATTEMPTS = 3
+FETCH_TIMEOUT_SECS = 60
 MAX_COVER_HEIGHT_PX = 600
 MIN_COVER_HEIGHT_PX = 100
 MIN_TITLE_SIMILARITY = 0.75
+MIN_PREFIX_MATCH_CHARS = 5
 NDL_DELAY_SECS = 1.0
 SHEET_FONT_PATH = "C:/Windows/Fonts/YuGothM.ttc"
 
@@ -92,13 +95,20 @@ def list_library_books():
     return books
 
 
+def is_same_book(first, second):
+    shorter, longer = sorted((first, second), key=len)
+    if not longer.startswith(shorter):
+        return False
+    # A digit right after the shared prefix means another volume: "幼女戦記1" vs "幼女戦記10".
+    return not longer[len(shorter):][:1].isdigit()
+
+
 def find_epub(epub_dir, title):
     wanted = normalize_for_match(title)
-    for epub_path in sorted(epub_dir.glob("*.epub")):
-        stem = normalize_for_match(epub_path.stem)
-        if wanted.startswith(stem) or stem.startswith(wanted):
-            return epub_path
-    return None
+    return next(
+        (path for path in sorted(epub_dir.glob("*.epub")) if is_same_book(normalize_for_match(path.stem), wanted)),
+        None,
+    )
 
 
 def find_cover_item(opf, items):
@@ -110,10 +120,10 @@ def find_cover_item(opf, items):
     cover_meta = next(
         (meta for meta in opf.iter() if meta.tag.endswith("meta") and meta.get("name") == "cover"), None
     )
-    if cover_meta is not None:
-        by_meta = next((item for item in items if item.get("id") == cover_meta.get("content")), None)
-        if by_meta is not None:
-            return by_meta
+    cover_id = cover_meta.get("content") if cover_meta is not None else None
+    by_meta = next((item for item in items if cover_id and item.get("id") == cover_id), None)
+    if by_meta is not None:
+        return by_meta
     return next(
         (item for item in items
          if "cover" in (item.get("id") or "").lower()
@@ -136,12 +146,12 @@ def read_epub_cover(epub_path):
 
 
 def fetch(url, params=None):
-    for attempt in range(3):
+    for attempt in range(FETCH_ATTEMPTS - 1):
         try:
-            return requests.get(url, params=params, headers=BROWSER_HEADERS, timeout=60)
+            return requests.get(url, params=params, headers=BROWSER_HEADERS, timeout=FETCH_TIMEOUT_SECS)
         except requests.RequestException:
             time.sleep(2 * (attempt + 1))
-    return None
+    return requests.get(url, params=params, headers=BROWSER_HEADERS, timeout=FETCH_TIMEOUT_SECS)
 
 
 def isbn10_from_13(isbn13):
@@ -162,42 +172,53 @@ def japanese_isbn13(raw):
     return core + str((10 - total % 10) % 10)
 
 
+def parse_ndl_item(item):
+    title = re.search(r"<title>([^<]*)</title>", item).group(1)
+    volume = re.search(r"<dcndl:volume>([^<]*)</dcndl:volume>", item)
+    raw_isbns = re.findall(r'<dc:identifier xsi:type="dcndl:ISBN(?:13)?">([^<]*)</dc:identifier>', item)
+    isbn = next((i for i in map(japanese_isbn13, raw_isbns) if i), None)
+    label = f"{title.split(' : ')[0]} {volume.group(1) if volume else ''}".strip()
+    return {"title": title, "label": label, "isbn": isbn} if isbn else None
+
+
 def ndl_candidates(title, author):
     params = {"title": title, "cnt": 20, "mediatype": "books"}
     if author:
         params["creator"] = author
     time.sleep(NDL_DELAY_SECS)
     response = fetch(NDL_SEARCH_URL, params)
-    if response is None or not response.ok:
-        return []
-    candidates = []
-    for item in re.findall(r"<item>.*?</item>", response.text, re.S):
-        candidate_title = re.search(r"<title>([^<]*)</title>", item).group(1)
-        raw_isbns = re.findall(r'<dc:identifier xsi:type="dcndl:ISBN(?:13)?">([^<]*)</dc:identifier>', item)
-        isbn = next((i for i in map(japanese_isbn13, raw_isbns) if i), None)
-        if isbn:
-            candidates.append({"title": candidate_title, "isbn": isbn})
-    return candidates
+    response.raise_for_status()
+    items = re.findall(r"<item>.*?</item>", response.text, re.S)
+    return [candidate for candidate in map(parse_ndl_item, items) if candidate]
 
 
-def title_score(query, candidate_title):
+def has_volume(text, volume):
+    # Numeric, so NDL's zero-padded "01" counts as volume 1 but "11" does not.
+    return any(int(number) == int(volume) for number in re.findall(r"\d+", normalize_for_match(text)))
+
+
+def title_score(query, candidate):
     wanted = normalize_for_match(query)
-    offered = normalize_for_match(candidate_title.split(" : ")[0])
-    if wanted == offered or wanted in normalize_for_match(candidate_title):
+    label = normalize_for_match(candidate["label"])
+    # NDL often stores the main title alone, so a label that starts the query also matches.
+    starts_query = len(label) >= MIN_PREFIX_MATCH_CHARS and wanted.startswith(label)
+    if wanted == label or wanted in normalize_for_match(candidate["title"]) or starts_query:
         return 1.0
-    return difflib.SequenceMatcher(None, wanted, offered).ratio()
+    return difflib.SequenceMatcher(None, wanted, label).ratio()
 
 
 def pick_candidate(query, candidates):
     volume = TRAILING_VOLUME.search(normalize_for_match(query))
-    same_volume = [
-        c for c in candidates
-        if volume is None or volume.group(1) in normalize_for_match(c["title"])
-    ]
-    scored = sorted(same_volume, key=lambda c: title_score(query, c["title"]), reverse=True)
-    if not scored or title_score(query, scored[0]["title"]) < MIN_TITLE_SIMILARITY:
+    same_volume = [c for c in candidates if volume is None or has_volume(c["label"], volume.group(1))]
+    wanted = normalize_for_match(query)
+    ranked = sorted(
+        same_volume,
+        key=lambda c: (normalize_for_match(c["label"]) == wanted, title_score(query, c)),
+        reverse=True,
+    )
+    if not ranked or title_score(query, ranked[0]) < MIN_TITLE_SIMILARITY:
         return None
-    return scored[0]
+    return ranked[0]
 
 
 def resolve_isbn(book):
@@ -207,9 +228,7 @@ def resolve_isbn(book):
 
 
 def image_if_usable(response):
-    if response is None or not response.ok:
-        return None
-    if not response.headers.get("content-type", "").startswith("image"):
+    if not response.ok or not response.headers.get("content-type", "").startswith("image"):
         return None
     if Image.open(io.BytesIO(response.content)).height < MIN_COVER_HEIGHT_PX:
         return None
@@ -238,16 +257,25 @@ def to_jpeg(image_bytes):
 def collect_cover(book, epub_dir, override):
     if override.get("skip"):
         return None, {"source": "skipped"}
-    epub_path = Path(override["epub"]) if override.get("epub") else find_epub(epub_dir, book["title"])
-    epub_cover = read_epub_cover(epub_path) if epub_path else None
-    if epub_cover and not override.get("isbn"):
-        return epub_cover, {"source": "epub", "epub": epub_path.name}
+    if override.get("file"):
+        return Path(override["file"]).read_bytes(), {"source": "file-override", "file": override["file"]}
     if override.get("isbn"):
         return cover_for_isbn(override["isbn"]), {"source": "isbn-override", "isbn": override["isbn"]}
+    epub_path = find_epub(epub_dir, book["title"])
+    epub_cover = read_epub_cover(epub_path) if epub_path else None
+    if epub_cover:
+        return epub_cover, {"source": "epub", "epub": epub_path.name}
     match = resolve_isbn(book)
     if match is None:
         return None, {"source": "not-found"}
-    return cover_for_isbn(match["isbn"]), {"source": "ndl", "isbn": match["isbn"], "matched": match["title"]}
+    return cover_for_isbn(match["isbn"]), {"source": "ndl", "isbn": match["isbn"], "matched": match["label"]}
+
+
+def collect_or_record_failure(book, epub_dir, override):
+    try:
+        return collect_cover(book, epub_dir, override)
+    except requests.RequestException as error:
+        return None, {"source": "fetch-failed", "error": str(error)[:200]}
 
 
 def draw_review_sheet(entries, out_dir, sheet_path):
@@ -271,6 +299,11 @@ def draw_review_sheet(entries, out_dir, sheet_path):
     sheet.save(sheet_path)
 
 
+def save_manifest(manifest_path, manifest):
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Collect cover images for every library book")
     parser.add_argument("--out", default="temp/covers")
@@ -290,19 +323,20 @@ def main():
     manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
 
     for book in list_library_books():
-        cover_path = out_dir / f"{book['key']}.jpg"
-        if cover_path.exists() and not args.force and book["key"] not in overrides:
+        key = book["key"]
+        cover_path = out_dir / f"{key}.jpg"
+        # Only a cover the manifest knows about is reviewed, so only that one may be skipped.
+        is_reviewed = cover_path.exists() and key in manifest
+        if is_reviewed and not args.force and key not in overrides:
             continue
-        cover_bytes, info = collect_cover(book, Path(args.epub_dir), overrides.get(book["key"], {}))
-        manifest[book["key"]] = info
-        print(f"{info['source']:<13} {book['key']}", flush=True)
-        if cover_bytes is None:
-            continue
-        cover_path.parent.mkdir(parents=True, exist_ok=True)
-        cover_path.write_bytes(to_jpeg(cover_bytes))
+        cover_bytes, info = collect_or_record_failure(book, Path(args.epub_dir), overrides.get(key, {}))
+        print(f"{info['source']:<13} {key}", flush=True)
+        if cover_bytes is not None:
+            cover_path.parent.mkdir(parents=True, exist_ok=True)
+            cover_path.write_bytes(to_jpeg(cover_bytes))
+        manifest[key] = info
+        save_manifest(manifest_path, manifest)
 
-    out_dir.mkdir(parents=True, exist_ok=True)
-    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
     missing = [key for key in manifest if not (out_dir / f"{key}.jpg").exists()]
     print(f"\n{len(manifest) - len(missing)} covers, {len(missing)} missing")
     for key in missing:
