@@ -17,7 +17,7 @@ export default $config({
   async run() {
     // Use SSM parameters directly (easier to set via AWS CLI)
     const stage = $app.stage;
-    const ssmPrefix = `japanese-read-helper-${stage}`;
+    const ssmPrefix = `${$app.name}-${stage}`;
 
     const geminiApiKey = await aws.ssm.getParameter({
       name: `${ssmPrefix}-GEMINI_API_KEY`,
