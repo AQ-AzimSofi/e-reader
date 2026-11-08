@@ -48,12 +48,17 @@ export default $config({
     // so a purchased recording is never reachable without a signed-in session.
     const narrationAudio = new sst.aws.Bucket("NarrationAudio");
 
+    // Library cover art. Kept out of git because covers are copyrighted; served
+    // through /api/covers so CloudFront caches them on the app's own domain.
+    const bookCovers = new sst.aws.Bucket("BookCovers");
+
     const web = new sst.aws.Nextjs("YomiSapo", {
       openNextVersion: "3.4.1",
       domain: stage === "production" ? "yomi-sapo.click" : undefined,
-      link: [narrationAudio],
+      link: [narrationAudio, bookCovers],
       environment: {
         NARRATION_AUDIO_BUCKET: narrationAudio.name,
+        BOOK_COVERS_BUCKET: bookCovers.name,
         GEMINI_API_KEY: geminiApiKey.value,
         AUTH_PASSWORD_HASH: authPasswordHash.value,
         DATABASE_URL: databaseUrl.value,

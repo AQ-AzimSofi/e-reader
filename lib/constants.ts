@@ -73,6 +73,7 @@ export const API_ROUTES = {
   EXPLAIN_SENTENCE: '/api/explain-sentence',
   PRIORITIZE: '/api/prioritize',
   NARRATION: '/api/narration',
+  BOOK_COVER: '/api/covers',
   VOCABULARY: '/api/vocabulary',
   AUTH_LOGIN: '/api/auth?action=login',
   AUTH_LOGOUT: '/api/auth?action=logout',
