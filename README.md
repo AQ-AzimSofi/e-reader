@@ -126,7 +126,7 @@ BUCKET=$(aws s3api list-buckets --query "Buckets[?starts_with(Name, 'yomi-sapo-p
 aws s3 sync temp/covers "s3://$BUCKET/covers/" --exclude manifest.json --content-type image/jpeg
 ```
 
-Sources, in order: the cover declared in the book's own EPUB (`temp/books/*.epub`), then an ISBN found through the National Diet Library search with the image from Amazon or hanmoto. Self-published books without a Japanese ISBN need a manual cover.
+Sources, in order: an override in `scripts/covers/overrides.json`, the cover declared in the book's own EPUB (`temp/books/*.epub`), then an ISBN found through the National Diet Library search with the image from Amazon or hanmoto. Overrides pin an edition (`{"isbn": "978..."}`) or use a local image (`{"file": "temp/covers-manual/<name>.jpg"}`) for books with no usable ISBN, such as self-published or English titles; keep those images in the gitignored `temp/covers-manual/`.
 
 ---
 
