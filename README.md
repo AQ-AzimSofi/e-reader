@@ -1,4 +1,4 @@
-# よみサポ (yomi-sapo)
+# よみサポ
 
 よみサポ is a full-stack web app for Japanese language learners. It started as a tool for reading Visual Novels (capturing in-game text via Textractor and AI-rephrasing it for comprehension) and has grown into a complete reading app for books, with furigana, AI assistance, text-to-speech, and vocabulary tracking.
 
