@@ -22,25 +22,10 @@ const BookImage: React.FC<BookImageProps> = ({
 
   const imageUrl = bookAssetUrl(imagePath);
 
+  // Some books reference illustrations whose source files were never kept; a
+  // placeholder there is not something the reader can act on, so the text just continues.
   if (hasError) {
-    return (
-      <div
-        className="my-4 p-6 rounded-lg border flex flex-col items-center justify-center min-h-[200px]"
-        style={{
-          backgroundColor: CSS_VARS.BASE,
-          borderColor: CSS_VARS.NEUTRAL,
-        }}
-      >
-        <p style={{ color: CSS_VARS.NEUTRAL }}>
-          📷 画像を読み込めませんでした: {fileName}
-        </p>
-        {chapterName && (
-          <p className="text-sm mt-2" style={{ color: CSS_VARS.NEUTRAL }}>
-            {chapterName}
-          </p>
-        )}
-      </div>
-    );
+    return null;
   }
 
   return (
