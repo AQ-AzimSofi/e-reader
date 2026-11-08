@@ -260,7 +260,7 @@ After conversion, the text file is automatically placed in `public/bookv2-furiga
 ## File Locations
 
 ```
-japanese-read-helper/
+yomi-sapo/
 ├── scripts/
 │   ├── epub-to-text-furigana.py    # Main script (run this)
 │   ├── furigana_helper.py           # Helper functions
@@ -300,7 +300,7 @@ N4_AND_LOWER_KANJI = set([
 
 ## License
 
-Part of the Japanese Read Helper project.
+Part of the よみサポ project.
 
 ## Credits
 

@@ -1,6 +1,6 @@
 # Vercel Deployment Guide
 
-This guide will walk you through deploying the Japanese Read Helper application to Vercel with Postgres database support.
+This guide will walk you through deploying the よみサポ application to Vercel with Postgres database support.
 
 ## Architecture Changes
 
@@ -62,7 +62,7 @@ vercel
 2. Click on "Storage" tab
 3. Click "Create Database"
 4. Select "Postgres"
-5. Choose a database name (e.g., `japanese-read-helper-db`)
+5. Choose a database name (e.g., `yomi-sapo-db`)
 6. Select region closest to your users
 7. Click "Create"
 8. The database will be automatically connected to your project
@@ -179,10 +179,10 @@ This will download the database credentials to `.env.local` so you can connect t
 For safer local development, you can set up a local Postgres database:
 
 1. Install PostgreSQL locally
-2. Create a local database: `createdb japanese-read-helper-local`
+2. Create a local database: `createdb yomi-sapo-local`
 3. Create `.env.local` with local database URL:
    ```
-   POSTGRES_URL="postgres://username:password@localhost:5432/japanese-read-helper-local"
+   POSTGRES_URL="postgres://username:password@localhost:5432/yomi-sapo-local"
    GEMINI_API_KEY="your-api-key"
    ```
 4. Initialize tables: Visit `http://localhost:3333/api/init-db`
