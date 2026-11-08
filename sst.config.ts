@@ -52,13 +52,19 @@ export default $config({
     // through /api/covers so CloudFront caches them on the app's own domain.
     const bookCovers = new sst.aws.Bucket("BookCovers");
 
+    // Illustrations and image metadata from inside the books. Separate from the
+    // covers because these are not public artwork: /api/book-assets only serves
+    // them to a signed-in reader, or to guests for the preview books.
+    const bookImages = new sst.aws.Bucket("BookImages");
+
     const web = new sst.aws.Nextjs("YomiSapo", {
       openNextVersion: "3.4.1",
       domain: stage === "production" ? "yomi-sapo.click" : undefined,
-      link: [narrationAudio, bookCovers],
+      link: [narrationAudio, bookCovers, bookImages],
       environment: {
         NARRATION_AUDIO_BUCKET: narrationAudio.name,
         BOOK_COVERS_BUCKET: bookCovers.name,
+        BOOK_IMAGES_BUCKET: bookImages.name,
         GEMINI_API_KEY: geminiApiKey.value,
         AUTH_PASSWORD_HASH: authPasswordHash.value,
         DATABASE_URL: databaseUrl.value,

@@ -5,9 +5,10 @@
  * Complete pipeline for converting EPUB files to fully processed books:
  * 1. Extract text + images from EPUB
  * 2. Extract ruby registry from EPUB
- * 3. Batch rephrase with Gemini AI
- * 4. Add furigana to rephrased text
- * 5. Sync to database after each chunk
+ * 3. Upload illustrations + image metadata to the BookImages bucket (BOOK_IMAGES_BUCKET)
+ * 4. Batch rephrase with Gemini AI
+ * 5. Add furigana to rephrased text
+ * 6. Sync to database after each chunk
  *
  * Usage:
  *   npx tsx scripts/epub-to-book.ts "path/to/book.epub" [options]
@@ -342,6 +343,51 @@ function extractRubyRegistry(epubPath: string, bookDir: string): boolean {
 }
 
 // ============================================================================
+// Illustration Upload
+// ============================================================================
+
+function runAwsS3(args: string[]): boolean {
+  const result = spawnSync('aws', ['s3', ...args], { stdio: 'inherit' });
+  if (result.status === 0) {
+    return true;
+  }
+  console.error(`aws s3 ${args[0]} failed: ${result.error?.message ?? `exit code ${result.status}`}`);
+  return false;
+}
+
+// public/<outputDir> is gitignored, so illustrations never reach the deployed app on
+// their own; the reader loads them from this bucket through /api/book-assets.
+// Exact paths rather than --include filters: the CLI matches filters against the
+// unescaped absolute path, so a book name with [ or ] would make every filter miss.
+function uploadBookImages(outputDir: string, bookName: string, isDryRun: boolean): void {
+  console.log('\n=== Step 3: Uploading Illustrations ===\n');
+
+  const bucket = process.env.BOOK_IMAGES_BUCKET;
+  if (!bucket) {
+    console.warn('BOOK_IMAGES_BUCKET is not set in .env.local; skipping. Illustrations will not show until uploaded.');
+    return;
+  }
+
+  const bookPrefix = `${outputDir}/${bookName}`;
+  const localBookDir = path.join(process.cwd(), 'public', bookPrefix);
+  const imagesDir = path.join(localBookDir, 'images');
+  const metadataPath = path.join(localBookDir, `${bookName}.json`);
+  const modeFlag = isDryRun ? '--dryrun' : '--only-show-errors';
+
+  const uploads = [
+    { localPath: imagesDir, args: ['sync', imagesDir, `s3://${bucket}/${bookPrefix}/images/`] },
+    { localPath: metadataPath, args: ['cp', metadataPath, `s3://${bucket}/${bookPrefix}/${bookName}.json`] },
+  ].filter((upload) => fs.existsSync(upload.localPath));
+  const failedUploads = uploads.filter((upload) => !runAwsS3([...upload.args, modeFlag]));
+
+  if (failedUploads.length > 0) {
+    console.error('Illustration upload failed; rerun the README "Book Illustrations" sync once fixed.');
+    return;
+  }
+  console.log(`${isDryRun ? 'Would upload' : 'Uploaded'} illustrations to s3://${bucket}/${bookPrefix}/`);
+}
+
+// ============================================================================
 // Text Chunking
 // ============================================================================
 
@@ -658,7 +704,7 @@ async function batchRephrase(
   sourceDir: string,
   options: CLIOptions
 ): Promise<boolean> {
-  console.log('\n=== Step 3: Batch Rephrasing ===\n');
+  console.log('\n=== Step 4: Batch Rephrasing ===\n');
 
   const sourcePath = path.join(sourceDir, `${bookName}.txt`);
   const outputPath = path.join(sourceDir, `${bookName}-rephrase.txt`);
@@ -986,7 +1032,11 @@ Example:
     extractRubyRegistry(options.epubPath, bookName);
   }
 
-  // Step 3: Batch Rephrase (unless skipped)
+  // Step 3: Upload illustrations before rephrasing, so chunks synced during step 4
+  // are readable with their images straight away
+  uploadBookImages(options.outputDir, bookName, options.dryRun);
+
+  // Step 4: Batch Rephrase (unless skipped)
   if (!options.skipRephrase) {
     const success = await batchRephrase(bookName, sourceDir, options);
     if (!success && !options.dryRun) {

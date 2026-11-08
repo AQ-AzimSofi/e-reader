@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { CSS_VARS } from '@/lib/constants';
+import { bookAssetUrl } from '@/lib/utils/bookAssetPath';
 
 interface BookImageProps {
   fileName: string;
@@ -16,30 +17,17 @@ const BookImage: React.FC<BookImageProps> = ({
   altText,
   chapterName,
 }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
+  const imageUrl = bookAssetUrl(imagePath);
+  // Tracked per URL: the metadata that maps an EPUB image name to its extracted file
+  // can arrive after the first render, and a failure for the unmapped name must not stick.
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const isLoading = loadedUrl !== imageUrl;
 
-  const imageUrl = imagePath;
-
-  if (hasError) {
-    return (
-      <div
-        className="my-4 p-6 rounded-lg border flex flex-col items-center justify-center min-h-[200px]"
-        style={{
-          backgroundColor: CSS_VARS.BASE,
-          borderColor: CSS_VARS.NEUTRAL,
-        }}
-      >
-        <p style={{ color: CSS_VARS.NEUTRAL }}>
-          📷 画像を読み込めませんでした: {fileName}
-        </p>
-        {chapterName && (
-          <p className="text-sm mt-2" style={{ color: CSS_VARS.NEUTRAL }}>
-            {chapterName}
-          </p>
-        )}
-      </div>
-    );
+  // Some books reference illustrations whose source files were never kept; a
+  // placeholder there is not something the reader can act on, so the text just continues.
+  if (failedUrl === imageUrl) {
+    return null;
   }
 
   return (
@@ -62,11 +50,8 @@ const BookImage: React.FC<BookImageProps> = ({
         <img
           src={imageUrl}
           alt={altText || fileName}
-          onLoad={() => setIsLoading(false)}
-          onError={() => {
-            setIsLoading(false);
-            setHasError(true);
-          }}
+          onLoad={() => setLoadedUrl(imageUrl)}
+          onError={() => setFailedUrl(imageUrl)}
           className="max-w-full h-auto"
           style={{
             display: isLoading ? 'none' : 'block',
@@ -75,7 +60,7 @@ const BookImage: React.FC<BookImageProps> = ({
           }}
         />
       </div>
-      {chapterName && !isLoading && !hasError && (
+      {chapterName && !isLoading && (
         <p
           className="text-sm mt-2 text-center"
           style={{ color: CSS_VARS.NEUTRAL }}

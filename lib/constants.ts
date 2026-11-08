@@ -74,6 +74,7 @@ export const API_ROUTES = {
   PRIORITIZE: '/api/prioritize',
   NARRATION: '/api/narration',
   BOOK_COVER: '/api/covers',
+  BOOK_ASSET: '/api/book-assets',
   VOCABULARY: '/api/vocabulary',
   AUTH_LOGIN: '/api/auth?action=login',
   AUTH_LOGOUT: '/api/auth?action=logout',
