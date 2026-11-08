@@ -10,3 +10,7 @@ lxml>=4.9.0
 # Japanese morphological analysis for furigana generation
 mecab-python3>=1.0.6
 unidic-lite>=1.0.8
+
+# Book cover collection (scripts/covers/fetch-covers.py)
+requests>=2.31.0
+Pillow>=10.0.0
