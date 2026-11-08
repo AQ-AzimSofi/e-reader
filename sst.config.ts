@@ -64,6 +64,19 @@ export default $config({
       warm: 1,
     });
 
+    // AWS now requires lambda:InvokeFunction as well as lambda:InvokeFunctionUrl
+    // for function URLs created after its 2025 change; sst 3.9.37 grants only the
+    // latter, so a fresh stack answers every request with 403. Its @pulumi/aws
+    // (6.66.2) cannot scope this grant with invokedViaFunctionUrl. Debt: drop this
+    // once sst is upgraded past sst#6571, which adds the scoped permission itself.
+    const server = web.nodes.server;
+    if (!server) throw new Error("sst Nextjs did not create a server function");
+    new aws.lambda.Permission("YomiSapoServerPublicInvoke", {
+      action: "lambda:InvokeFunction",
+      function: server.apply((fn) => fn.nodes.function.name),
+      principal: "*",
+    });
+
     return {
       url: web.url,
     };
