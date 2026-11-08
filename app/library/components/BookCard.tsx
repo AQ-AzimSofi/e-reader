@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { API_ROUTES } from '@/lib/constants';
 
 interface BookCardProps {
   fileName: string;
@@ -12,6 +14,8 @@ interface BookCardProps {
   isPreview?: boolean;
 }
 
+type CoverState = 'loading' | 'loaded' | 'missing';
+
 export default function BookCard({
   fileName,
   directory,
@@ -21,14 +25,17 @@ export default function BookCard({
   bookmarkPage,
   isPreview,
 }: BookCardProps) {
+  const [coverState, setCoverState] = useState<CoverState>('loading');
   const displayName = fileName
     .replace(/-rephrase-furigana$/, '')
     .replace(/-rephrase$/, '')
     .replace(/-furigana$/, '')
     .replace(/-/g, ' ')
     .replace(/^\w/, c => c.toUpperCase());
+  const bookParams = `directory=${encodeURIComponent(directory)}&fileName=${encodeURIComponent(fileName)}`;
   const pageParam = bookmarkPage && bookmarkPage > 1 ? `&page=${bookmarkPage}` : '';
-  const readUrl = `/read?directory=${encodeURIComponent(directory)}&fileName=${encodeURIComponent(fileName)}${pageParam}`;
+  const readUrl = `/read?${bookParams}${pageParam}`;
+  const coverUrl = `${API_ROUTES.BOOK_COVER}?${bookParams}`;
   const clampedProgress = Math.min(100, Math.max(0, progress));
 
   return (
@@ -40,13 +47,43 @@ export default function BookCard({
           boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04)',
         }}
       >
-        <div className="aspect-[3/4] flex flex-col">
-          <div className="px-3 pt-3 flex items-center justify-between gap-2">
+        <div className="relative aspect-[5/7]" style={{ backgroundColor: '#F2F2F7' }}>
+          {coverState === 'missing' && (
+            <div className="absolute inset-0 flex items-center justify-center px-4" style={{ backgroundColor: '#FFFFFF' }}>
+              <h3
+                className="text-center font-semibold text-base leading-snug"
+                style={{ color: '#1D1D1F' }}
+              >
+                {displayName}
+              </h3>
+            </div>
+          )}
+
+          {coverState !== 'missing' && (
+            // next/image would route through the image optimizer function, which this
+            // stack does not grant public invoke on (see sst.config.ts).
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={coverUrl}
+              alt={displayName}
+              loading="lazy"
+              decoding="async"
+              onLoad={() => setCoverState('loaded')}
+              onError={() => setCoverState('missing')}
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{
+                opacity: coverState === 'loaded' ? 1 : 0,
+                transition: 'opacity 0.3s ease',
+              }}
+            />
+          )}
+
+          <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-2">
             <span
               className="inline-block px-2 py-0.5 rounded-md text-xs font-medium"
               style={{
-                backgroundColor: '#F2F2F7',
-                color: '#8E8E93',
+                backgroundColor: 'rgba(242, 242, 247, 0.92)',
+                color: '#636366',
               }}
             >
               {directoryTag}
@@ -60,40 +97,31 @@ export default function BookCard({
               </span>
             )}
           </div>
+        </div>
 
-          <div className="flex-1 flex items-center justify-center px-4">
-            <h3
-              className="text-center font-semibold text-base leading-snug"
-              style={{ color: '#1D1D1F' }}
-            >
-              {displayName}
-            </h3>
-          </div>
-
-          <div className="px-3 pb-3">
-            <div className="flex justify-between items-center mb-1.5" style={{ fontSize: '11px' }}>
+        <div className="px-3 pt-2 pb-3">
+          <div className="flex justify-between items-center mb-1.5" style={{ fontSize: '11px' }}>
+            <span style={{ color: '#8E8E93' }}>
+              {Math.round(clampedProgress)}%
+            </span>
+            {totalCharacters && (
               <span style={{ color: '#8E8E93' }}>
-                {Math.round(clampedProgress)}%
+                {totalCharacters.toLocaleString()} chars
               </span>
-              {totalCharacters && (
-                <span style={{ color: '#8E8E93' }}>
-                  {totalCharacters.toLocaleString()} chars
-                </span>
-              )}
-            </div>
+            )}
+          </div>
+          <div
+            className="h-1 rounded-full overflow-hidden"
+            style={{ backgroundColor: '#E5E5EA' }}
+          >
             <div
-              className="h-1 rounded-full overflow-hidden"
-              style={{ backgroundColor: '#E5E5EA' }}
-            >
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${clampedProgress}%`,
-                  backgroundColor: '#007AFF',
-                  transition: 'width 0.3s ease',
-                }}
-              />
-            </div>
+              className="h-full rounded-full"
+              style={{
+                width: `${clampedProgress}%`,
+                backgroundColor: '#007AFF',
+                transition: 'width 0.3s ease',
+              }}
+            />
           </div>
         </div>
       </div>
