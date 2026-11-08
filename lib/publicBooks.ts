@@ -59,6 +59,14 @@ export function findPublicBookByPath(
   return PUBLIC_BOOKS.find((book) => publicBookPath(book) === fullPath) || null;
 }
 
+/**
+ * Whether a book asset path (an illustration or the metadata JSON, laid out as
+ * `/<directory>/...`) belongs to a preview book, so a guest may load it.
+ */
+export function isPublicBookAsset(assetPath: string): boolean {
+  return PUBLIC_BOOKS.some((book) => assetPath.startsWith(`/${book.directory}/`));
+}
+
 export function isPublicDirectory(directory: string | null | undefined): boolean {
   if (!directory) return false;
   return PUBLIC_BOOKS.some((book) => book.directory === directory);
