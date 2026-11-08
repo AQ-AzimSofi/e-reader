@@ -5,9 +5,10 @@
  * Complete pipeline for converting EPUB files to fully processed books:
  * 1. Extract text + images from EPUB
  * 2. Extract ruby registry from EPUB
- * 3. Batch rephrase with Gemini AI
- * 4. Add furigana to rephrased text
- * 5. Sync to database after each chunk
+ * 3. Upload illustrations + image metadata to the BookImages bucket (BOOK_IMAGES_BUCKET)
+ * 4. Batch rephrase with Gemini AI
+ * 5. Add furigana to rephrased text
+ * 6. Sync to database after each chunk
  *
  * Usage:
  *   npx tsx scripts/epub-to-book.ts "path/to/book.epub" [options]
@@ -342,6 +343,35 @@ function extractRubyRegistry(epubPath: string, bookDir: string): boolean {
 }
 
 // ============================================================================
+// Illustration Upload
+// ============================================================================
+
+// public/<outputDir> is gitignored, so illustrations never reach the deployed app on
+// their own; the reader loads them from this bucket through /api/book-assets.
+function uploadBookImages(outputDir: string, bookName: string): void {
+  console.log('\n=== Step 3: Uploading Illustrations ===\n');
+
+  const bucket = process.env.BOOK_IMAGES_BUCKET;
+  if (!bucket) {
+    console.warn('BOOK_IMAGES_BUCKET is not set in .env.local; skipping. Illustrations will not show until uploaded.');
+    return;
+  }
+
+  const bookPrefix = `${outputDir}/${bookName}`;
+  const result = spawnSync('aws', [
+    's3', 'sync', path.join(process.cwd(), 'public', bookPrefix), `s3://${bucket}/${bookPrefix}/`,
+    '--exclude', '*', '--include', 'images/*', '--include', '*.json',
+    '--exclude', '*-progress.json', '--exclude', 'ruby-registry.json', '--only-show-errors',
+  ], { encoding: 'utf-8', stdio: 'inherit' });
+
+  if (result.status !== 0) {
+    console.error('Illustration upload failed; rerun the README "Book Illustrations" sync once fixed.');
+    return;
+  }
+  console.log(`Uploaded illustrations to s3://${bucket}/${bookPrefix}/`);
+}
+
+// ============================================================================
 // Text Chunking
 // ============================================================================
 
@@ -658,7 +688,7 @@ async function batchRephrase(
   sourceDir: string,
   options: CLIOptions
 ): Promise<boolean> {
-  console.log('\n=== Step 3: Batch Rephrasing ===\n');
+  console.log('\n=== Step 4: Batch Rephrasing ===\n');
 
   const sourcePath = path.join(sourceDir, `${bookName}.txt`);
   const outputPath = path.join(sourceDir, `${bookName}-rephrase.txt`);
@@ -986,7 +1016,13 @@ Example:
     extractRubyRegistry(options.epubPath, bookName);
   }
 
-  // Step 3: Batch Rephrase (unless skipped)
+  // Step 3: Upload illustrations before rephrasing, so chunks synced during step 4
+  // are readable with their images straight away
+  if (!options.dryRun) {
+    uploadBookImages(options.outputDir, bookName);
+  }
+
+  // Step 4: Batch Rephrase (unless skipped)
   if (!options.skipRephrase) {
     const success = await batchRephrase(bookName, sourceDir, options);
     if (!success && !options.dryRun) {
