@@ -50,7 +50,6 @@ export default $config({
 
     const web = new sst.aws.Nextjs("YomiSapo", {
       openNextVersion: "3.4.1",
-      domain: stage === "production" ? "yomi-sapo.click" : undefined,
       link: [narrationAudio],
       environment: {
         NARRATION_AUDIO_BUCKET: narrationAudio.name,
