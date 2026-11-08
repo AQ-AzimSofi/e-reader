@@ -94,7 +94,7 @@ async function importBookmarks() {
         INSERT INTO bookmarks (file_name, directory, bookmark_text)
         VALUES (${bookmark.file_name}, ${bookmark.directory || ''}, ${bookmark.bookmark_text || ''})
         ON CONFLICT (file_name, directory)
-        DO UPDATE SET bookmark_text = ${bookmark.bookmark_text || ''}, updated_at = CURRENT_TIMESTAMP
+        DO UPDATE SET bookmark_text = ${bookmark.bookmark_text || ''}, bookmark_page = NULL, updated_at = CURRENT_TIMESTAMP
       `;
       bookmarkCount++;
     }
