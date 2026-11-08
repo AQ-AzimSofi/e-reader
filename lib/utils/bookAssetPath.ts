@@ -19,6 +19,18 @@ export function bookAssetPath(directory: string, fileName: string, extension: st
 }
 
 /**
+ * Asset path of an illustration. A nested directory (`bookv2-furigana/<book>`) is the
+ * book's own folder; a flat one (`bookv2-furigana`) holds many books, each in a
+ * `<book>/` subfolder, the same folder bookAssetPath uses for the metadata JSON.
+ */
+export function bookImagePath(directory: string, fileName: string, imageFileName: string): string {
+  const bookFolder = directory.includes('/')
+    ? directory
+    : `${directory}/${fileName.replace(REPHRASE_SUFFIX_PATTERN, '')}`;
+  return `/${bookFolder}/images/${imageFileName}`;
+}
+
+/**
  * URL that serves a book asset path (an illustration or the metadata JSON) from
  * the private BookImages bucket. Book files are not deployed with the app.
  */

@@ -8,6 +8,7 @@ import StartHereIcon from "@/app/components/icons/StartHereIcon";
 import BookImage from "@/app/components/reading/BookImage";
 import { COLORS, EXPLANATION_CONFIG } from "@/lib/constants";
 import { parseFurigana, segmentsToHTML } from "@/lib/utils/furiganaParser";
+import { bookImagePath } from "@/lib/utils/bookAssetPath";
 import { guestKeyHeaders, promptGuestKeyOnFailure } from "@/lib/guestKeys";
 
 const IMAGE_PATTERN = /\[IMAGE:([^\]]+)\]/;
@@ -49,6 +50,7 @@ const ParagraphItem: React.FC<ParagraphItemProps> = ({
   const [showTranslation, setShowTranslation] = useState(false);
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
+  const [unavailableImagePaths, setUnavailableImagePaths] = useState<ReadonlySet<string>>(() => new Set());
 
   const handleBookmarkClick = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +114,24 @@ const ParagraphItem: React.FC<ParagraphItemProps> = ({
   };
 
   const hasImage = IMAGE_PATTERN.test(text);
+
+  // fileName is the reader's full "<directory>/<file>" path.
+  const pathSeparatorIndex = fileName.lastIndexOf("/");
+  const resolveImage = (originalName: string) => {
+    const actualFileName =
+      imageMap?.[originalName] ||
+      imageMap?.[`image/${originalName}`] ||
+      originalName;
+    const imagePath = bookImagePath(
+      fileName.slice(0, pathSeparatorIndex),
+      fileName.slice(pathSeparatorIndex + 1),
+      actualFileName
+    );
+    return { actualFileName, imagePath };
+  };
+
+  const markImageUnavailable = (imagePath: string) =>
+    setUnavailableImagePaths((previous) => new Set(previous).add(imagePath));
 
   const parseContentWithImages = (content: string) => {
     const parts: Array<{ type: "text" | "image"; content: string }> = [];
@@ -261,20 +281,14 @@ const ParagraphItem: React.FC<ParagraphItemProps> = ({
               </div>
             );
           } else {
-            const originalName = part.content;
-            const actualFileName =
-              imageMap?.[originalName] ||
-              imageMap?.[`image/${originalName}`] ||
-              originalName;
-            const pathParts = fileName?.split("/") || [];
-            const basePath = pathParts.slice(0, -1).join("/");
-            const imagePath = `/${basePath}/images/${actualFileName}`;
+            const { actualFileName, imagePath } = resolveImage(part.content);
             return (
               <BookImage
                 key={index}
                 fileName={actualFileName}
                 imagePath={imagePath}
                 altText={`Illustration from ${fileName}`}
+                onUnavailable={() => markImageUnavailable(imagePath)}
               />
             );
           }
@@ -295,6 +309,17 @@ const ParagraphItem: React.FC<ParagraphItemProps> = ({
     cursor: "pointer",
     transition: "transform 0.15s ease, background-color 0.15s ease",
   };
+
+  // A paragraph made only of illustrations, none of which exist, would be an empty card.
+  const paragraphParts = hasImage ? parseContentWithImages(text) : [];
+  const isOnlyUnavailableImages =
+    paragraphParts.length > 0 &&
+    paragraphParts.every(
+      (part) => part.type === "image" && unavailableImagePaths.has(resolveImage(part.content).imagePath)
+    );
+  if (isOnlyUnavailableImages) {
+    return null;
+  }
 
   return (
     <div className="paragraph-item" id={id} data-global-index={globalIndex} style={{ scrollMarginTop: '80px' }}>
