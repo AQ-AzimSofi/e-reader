@@ -45,5 +45,17 @@ jobs:
           sudo rm -f /usr/local/bin/pulumi*
           rm -rf ~/.pulumi
 
+      # SST fetches Pulumi from GitHub releases, which can 504. Pre-seeding the
+      # version SST pins makes it skip that download. Must match the Pulumi SDK
+      # version in sst's go.mod; on mismatch SST falls back to its own download.
+      - name: Install Pulumi for SST from Pulumi CDN
+        env:
+          PULUMI_VERSION: v3.146.0
+        run: |
+          mkdir -p ~/.config/sst/bin
+          curl -fsSL --retry 3 "https://get.pulumi.com/releases/sdk/pulumi-${PULUMI_VERSION}-linux-x64.tar.gz" \
+            | tar -xz -C ~/.config/sst/bin --strip-components=1
+          ~/.config/sst/bin/pulumi version
+
       - name: Deploy with SST
         run: npx sst deploy --stage production
