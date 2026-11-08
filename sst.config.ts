@@ -69,6 +69,8 @@ export default $config({
     // latter, so a fresh stack answers every request with 403. Its @pulumi/aws
     // (6.66.2) cannot scope this grant with invokedViaFunctionUrl. Debt: drop this
     // once sst is upgraded past sst#6571, which adds the scoped permission itself.
+    // Under `sst dev` the app runs locally and no server function exists.
+    if ($dev) return { url: web.url };
     const server = web.nodes.server;
     if (!server) throw new Error("sst Nextjs did not create a server function");
     new aws.lambda.Permission("YomiSapoServerPublicInvoke", {
