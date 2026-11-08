@@ -48,8 +48,32 @@ export default $config({
     // so a purchased recording is never reachable without a signed-in session.
     const narrationAudio = new sst.aws.Bucket("NarrationAudio");
 
+    const isProduction = stage === "production";
+    const productionDomain = "yomi-sapo.click";
+
+    // With a custom domain, SST answers *.cloudfront.net hosts with a 403. User
+    // injection runs before that block, so saved CloudFront links get a 301 instead.
+    const redirectCloudfrontHostInjection = `
+      if (event.request.headers.host.value.includes("cloudfront.net")) {
+        var qs = event.request.querystring;
+        var pairs = Object.keys(qs).reduce(function (acc, key) {
+          var entries = qs[key].multiValue || [qs[key]];
+          return acc.concat(entries.map(function (entry) { return entry.value === "" ? key : key + "=" + entry.value; }));
+        }, []);
+        var search = pairs.length > 0 ? "?" + pairs.join("&") : "";
+        return {
+          statusCode: 301,
+          statusDescription: "Moved Permanently",
+          headers: { location: { value: "https://${productionDomain}" + event.request.uri + search } },
+        };
+      }`;
+
     const web = new sst.aws.Nextjs("JapaneseReadHelper", {
       openNextVersion: "3.4.1",
+      domain: isProduction ? productionDomain : undefined,
+      edge: isProduction
+        ? { viewerRequest: { injection: redirectCloudfrontHostInjection } }
+        : undefined,
       link: [narrationAudio],
       environment: {
         NARRATION_AUDIO_BUCKET: narrationAudio.name,
