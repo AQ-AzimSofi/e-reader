@@ -9,6 +9,7 @@ interface BookImageProps {
   imagePath: string;
   altText?: string;
   chapterName?: string;
+  onUnavailable?: () => void;
 }
 
 const BookImage: React.FC<BookImageProps> = ({
@@ -16,6 +17,7 @@ const BookImage: React.FC<BookImageProps> = ({
   imagePath,
   altText,
   chapterName,
+  onUnavailable,
 }) => {
   const imageUrl = bookAssetUrl(imagePath);
   // Tracked per URL: the metadata that maps an EPUB image name to its extracted file
@@ -51,7 +53,10 @@ const BookImage: React.FC<BookImageProps> = ({
           src={imageUrl}
           alt={altText || fileName}
           onLoad={() => setLoadedUrl(imageUrl)}
-          onError={() => setFailedUrl(imageUrl)}
+          onError={() => {
+            setFailedUrl(imageUrl);
+            onUnavailable?.();
+          }}
           className="max-w-full h-auto"
           style={{
             display: isLoading ? 'none' : 'block',
