@@ -110,6 +110,26 @@ Once processed, the book will automatically appear in the file selector dropdown
 
 ---
 
+## Book Covers
+
+Library cards show each book's cover. Covers are copyrighted, so they are never committed: they live in the private `BookCovers` S3 bucket under `covers/<directory>/<fileName>.jpg` and are served by `/api/covers`, which CloudFront caches. A book without a cover keeps the plain title card.
+
+```bash
+# 1. Collect a cover for every book in the local DB into temp/covers/, plus a review sheet
+python scripts/covers/fetch-covers.py --sheet temp/covers-sheet.png
+
+# 2. Check every cover on the sheet. For a wrong or missing match, add the edition's ISBN
+#    to scripts/covers/overrides.json and run step 1 again (existing covers are kept).
+
+# 3. Upload
+BUCKET=$(aws s3api list-buckets --query "Buckets[?starts_with(Name, 'yomi-sapo-production-bookcoversbucket')].Name" --output text)
+aws s3 sync temp/covers "s3://$BUCKET/covers/" --exclude manifest.json --content-type image/jpeg
+```
+
+Sources, in order: the cover declared in the book's own EPUB (`temp/books/*.epub`), then an ISBN found through the National Diet Library search with the image from Amazon or hanmoto. Self-published books without a Japanese ISBN need a manual cover.
+
+---
+
 ## Content Management (Database-Only Architecture)
 
 よみサポ uses a **database-first architecture** for managing book content. Text files are **not committed to the repository** to avoid copyright issues. Instead, content is stored in PostgreSQL and managed via admin API endpoints.
