@@ -125,6 +125,7 @@ export const CREATE_TABLES_SQL = `
     content TEXT NOT NULL,
     total_pages INT DEFAULT 0,
     total_characters INT DEFAULT 0,
+    content_bytes INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(file_name, directory)
