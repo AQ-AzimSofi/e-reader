@@ -45,10 +45,13 @@ jobs:
           sudo rm -f /usr/local/bin/pulumi*
           rm -rf ~/.pulumi
 
-      # SST fetches Pulumi from GitHub releases, which can 504. Pre-seeding the
-      # version SST pins makes it skip that download. Must match the Pulumi SDK
-      # version in sst's go.mod; on mismatch SST falls back to its own download.
+      # SST fetches Pulumi and Bun from GitHub releases, which can 504. Pre-seeding
+      # the exact versions SST pins makes it skip those downloads; if a step fails
+      # or a version is wrong, SST falls back to its own download.
+      # When upgrading sst, update both versions: Pulumi = the pulumi/sdk/v3 version
+      # in sst's go.mod, Bun = BUN_VERSION in sst's pkg/global/global.go.
       - name: Install Pulumi for SST from Pulumi CDN
+        continue-on-error: true
         env:
           PULUMI_VERSION: v3.146.0
         run: |
@@ -56,6 +59,16 @@ jobs:
           curl -fsSL --retry 3 "https://get.pulumi.com/releases/sdk/pulumi-${PULUMI_VERSION}-linux-x64.tar.gz" \
             | tar -xz -C ~/.config/sst/bin --strip-components=1
           ~/.config/sst/bin/pulumi version
+
+      - name: Install Bun for SST from npm
+        continue-on-error: true
+        env:
+          BUN_VERSION: 1.2.1
+        run: |
+          mkdir -p ~/.config/sst/bin
+          curl -fsSL --retry 3 "https://registry.npmjs.org/@oven/bun-linux-x64/-/bun-linux-x64-${BUN_VERSION}.tgz" \
+            | tar -xz -C ~/.config/sst/bin --strip-components=2 package/bin/bun
+          ~/.config/sst/bin/bun --version
 
       - name: Deploy with SST
         run: npx sst deploy --stage production
