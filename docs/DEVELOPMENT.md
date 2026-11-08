@@ -63,7 +63,7 @@ Edit `.env.local` and configure:
 
 2. **Verify database connection string** (should already be correct):
    ```env
-   DATABASE_URL="postgres://postgres:123@localhost:5432/japanese_helper"
+   DATABASE_URL="postgres://postgres:123@localhost:5432/yomi_sapo"
    ```
    **Note**: The password `123` matches the `docker-compose.yml` configuration. If you changed the password in `docker-compose.yml`, update it here too.
 
@@ -147,13 +147,13 @@ You can connect to your local database using any PostgreSQL client:
 **Connection details**:
 - Host: `localhost`
 - Port: `5432`
-- Database: `japanese_helper`
+- Database: `yomi_sapo`
 - Username: `postgres`
 - Password: `postgres`
 
 **Example with psql**:
 ```bash
-psql -h localhost -U postgres -d japanese_helper
+psql -h localhost -U postgres -d yomi_sapo
 ```
 
 **Popular GUI clients**:
@@ -188,13 +188,13 @@ docker-compose logs -f db
 ### Backup Database
 
 ```bash
-docker exec japanese-helper-db pg_dump -U postgres japanese_helper > backup.sql
+docker exec yomi-sapo-db pg_dump -U postgres yomi_sapo > backup.sql
 ```
 
 ### Restore Database
 
 ```bash
-cat backup.sql | docker exec -i japanese-helper-db psql -U postgres -d japanese_helper
+cat backup.sql | docker exec -i yomi-sapo-db psql -U postgres -d yomi_sapo
 ```
 
 ## Development Scripts

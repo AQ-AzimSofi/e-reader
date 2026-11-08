@@ -1,20 +1,22 @@
 version: '3.8'
 
+name: yomi-sapo
+
 services:
   db:
     image: postgres:15-alpine
-    container_name: japanese-helper-db
+    container_name: yomi-sapo-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 123
-      POSTGRES_DB: japanese_helper
+      POSTGRES_DB: yomi_sapo
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d japanese_helper"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d yomi_sapo"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -23,7 +25,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: japanese-helper-pgadmin
+    container_name: yomi-sapo-pgadmin
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
