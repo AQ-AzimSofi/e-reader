@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Read helper",
+  title: "よみサポ",
   description: "A tool to help you read and understand your target language(jp) better.",
 };
 

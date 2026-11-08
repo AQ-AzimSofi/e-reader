@@ -1,13 +1,13 @@
 /**
- * OpenAPI 3.0 specification for Japanese Read Helper Admin API
+ * OpenAPI 3.0 specification for the よみサポ Admin API
  */
 export const openApiSpec = {
   openapi: '3.0.0',
   info: {
-    title: 'Japanese Read Helper Admin API',
+    title: 'よみサポ Admin API',
     version: '1.0.0',
     description: `
-API for managing text entries and bookmarks in the Japanese Read Helper application.
+API for managing text entries and bookmarks in the よみサポ application.
 
 ## Authentication
 
@@ -28,8 +28,8 @@ Set \`ADMIN_API_KEY\` in your \`.env.local\` file.
 The \`/api/admin\` endpoint uses action-based routing with query parameters. Bookmarks are automatically initialized with empty strings when text entries are created.
     `,
     contact: {
-      name: 'Japanese Read Helper',
-      url: 'https://github.com/yourusername/japanese-read-helper',
+      name: 'よみサポ',
+      url: 'https://github.com/AQ-AzimSofi/yomi-sapo',
     },
   },
   servers: [
