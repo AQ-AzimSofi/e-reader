@@ -360,7 +360,7 @@ CREATE TABLE text_entries (
 
 ## Next Steps
 
-- See [DEPLOYMENT.md](./DEPLOYMENT.md) for Vercel deployment instructions
+- See [DEPLOYMENT.md](./DEPLOYMENT.md) for production deployment
 - See [CLAUDE.md](./CLAUDE.md) for project architecture details
 
 ## Getting Help

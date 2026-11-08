@@ -224,8 +224,9 @@ export ADMIN_API_KEY=your_key_here
 # Process and upload directly to database (no files created)
 python3 scripts/epub-to-text-furigana.py book.epub --output-mode api
 
-# Optional: Specify custom API URL (defaults to http://localhost:3333)
-export API_URL=https://your-app.vercel.app
+# Optional: target another local/LAN dev server (defaults to http://localhost:3333).
+# Production rejects API mode: it has no ADMIN_API_KEY.
+export API_URL=http://192.168.1.15:3001
 python3 scripts/epub-to-text-furigana.py book.epub --output-mode api
 ```
 
@@ -257,7 +258,7 @@ Production runs at https://yomi-sapo.click on AWS (Lambda + CloudFront via SST, 
 
 2. **Secrets** live in AWS SSM Parameter Store (`ap-northeast-1`) as SecureString parameters named `yomi-sapo-production-<KEY>` (e.g. `GEMINI_API_KEY`, `DATABASE_URL`, `SESSION_SECRET`).
 
-3. **Add books** to production: process them locally, then push the new rows with `npm run db:sync` (the startup/shutdown sync in `npm run dev` does the same). The admin API is local-only: production has no `ADMIN_API_KEY`, so `/api/admin` returns 401 there.
+3. **Add books** to production: process them locally, then push the new rows with `npm run db:sync` and choose `[2] Push missing to prod` (the startup/shutdown sync in `npm run dev` does the same). Both need `PROD_DATABASE_URL` (the Neon connection string) in `.env.local`. The sync covers database rows only (text, bookmarks, vocabulary); illustrations and metadata JSON under `public/bookv2-furigana/` are gitignored, so they never reach production. The admin API is local-only: production has no `ADMIN_API_KEY`, so `/api/admin` returns 401 there.
 
 ### Important Notes
 
@@ -265,8 +266,8 @@ Production runs at https://yomi-sapo.click on AWS (Lambda + CloudFront via SST, 
 - **Images are gitignored** - book covers/illustrations not committed
 - **Database is the source of truth** - all text content stored in PostgreSQL
 - **Directory structure preserved** - `.gitkeep` files maintain folder structure
-- **ADMIN_API_KEY required** - generate a secure key for production
-- **Database backup** - recommended for production (Neon); take a `pg_dump` before risky changes
+- **ADMIN_API_KEY** - needed locally for the admin API and EPUB API mode; intentionally not set in production
+- **Database backup** - recommended for production (Neon PG17); before risky changes run `docker run --rm postgres:17-alpine pg_dump '<NEON_URL>' --no-owner --no-acl > backup.sql` (the local PG15 tools refuse a newer server)
 
 ### Migrating Existing Files
 
