@@ -27,7 +27,7 @@ function toBookProgress(row: LibraryRow, isSignedIn: boolean): BookProgress {
   const bookmarkPage = isSignedIn ? row.bookmark_page || null : null;
   return {
     progress: bookmarkPage && totalPages > 0 ? (bookmarkPage / totalPages) * 100 : 0,
-    totalCharacters: previewBook ? 0 : row.content_length,
+    totalCharacters: previewBook ? 0 : row.total_characters ?? 0,
     bookmarkPage,
     totalPages,
     bookmarkUpdatedAt: isSignedIn ? row.bookmark_updated_at || null : null,
@@ -40,7 +40,6 @@ export async function GET() {
     const isSignedIn = await isAuthenticated();
     // Guests only see allowlisted books, and never the owner's reading position.
     const rows = await getLibraryRows(
-      isSignedIn,
       (row) => isSignedIn || findPublicBook(row.directory, row.file_name) !== null
     );
     const progressData: ProgressResponse = Object.fromEntries(
