@@ -47,6 +47,7 @@ export async function upsertBookmark(
       ON CONFLICT (file_name, directory)
       DO UPDATE SET
         bookmark_text = ${bookmarkText},
+        bookmark_page = NULL,
         updated_at = CURRENT_TIMESTAMP
     `;
   } catch (error) {
