@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { CSS_VARS } from '@/lib/constants';
+import { bookAssetUrl } from '@/lib/utils/bookAssetPath';
 
 interface BookImageProps {
   fileName: string;
@@ -19,7 +20,7 @@ const BookImage: React.FC<BookImageProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  const imageUrl = imagePath;
+  const imageUrl = bookAssetUrl(imagePath);
 
   if (hasError) {
     return (

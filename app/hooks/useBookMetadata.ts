@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { bookAssetPath } from '@/lib/utils/bookAssetPath';
+import { bookAssetPath, bookAssetUrl } from '@/lib/utils/bookAssetPath';
 import type { BookMetadata, ImageMap } from '@/lib/types';
 
 interface UseBookMetadataResult {
@@ -37,7 +37,7 @@ export function useBookMetadata(
       setError(null);
 
       try {
-        const response = await fetch(bookAssetPath(directory, fileName, '.json'));
+        const response = await fetch(bookAssetUrl(bookAssetPath(directory, fileName, '.json')));
 
         if (!response.ok) {
           // If JSON doesn't exist, silently fail (not all books have metadata)
