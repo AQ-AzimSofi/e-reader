@@ -1,20 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifySession } from '@/lib/auth/session';
-import { findPublicBook, PUBLIC_BOOKS } from '@/lib/publicBooks';
+import { findPublicBook } from '@/lib/publicBooks';
 
 // What a signed-out guest may reach: the home redirect ('/') and public library,
-// the reader ('/read') for an allowlisted book (checked against the query params),
-// and an allowlisted book's own static assets (e.g. the metadata JSON that the
-// reader fetches to resolve inline illustrations).
-function decodePath(pathname: string): string {
-  try {
-    return decodeURIComponent(pathname);
-  } catch {
-    return pathname;
-  }
-}
-
+// and the reader ('/read') for an allowlisted book (checked against the query params).
+// A preview book's illustrations and metadata come through /api/book-assets, which
+// applies the same allowlist itself.
 function isGuestAllowed(request: NextRequest): boolean {
   const path = request.nextUrl.pathname;
 
@@ -28,13 +20,7 @@ function isGuestAllowed(request: NextRequest): boolean {
     return findPublicBook(directory, fileName) !== null;
   }
 
-  // Guests may fetch only an allowlisted book's metadata JSON (used to resolve
-  // inline illustrations; the path may be percent-encoded). Restricting to .json
-  // keeps the full-text .txt sibling from riding along and bypassing the preview
-  // cap; images are already excluded from the matcher, so they still render.
-  const decodedPath = decodePath(path);
-  if (!decodedPath.toLowerCase().endsWith('.json')) return false;
-  return PUBLIC_BOOKS.some((book) => decodedPath.startsWith(`/${book.directory}/`));
+  return false;
 }
 
 export async function middleware(request: NextRequest) {
