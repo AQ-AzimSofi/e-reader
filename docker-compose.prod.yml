@@ -2,11 +2,11 @@ version: '3.8'
 
 services:
   app:
-    image: ghcr.io/azimsofi/japanese-read-helper:latest
-    container_name: japanese-helper-app
+    image: ghcr.io/azimsofi/yomi-sapo:latest
+    container_name: yomi-sapo-app
     restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD:-securepassword}@db:5432/japanese_helper
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD:-securepassword}@db:5432/yomi_sapo
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
       - AUTH_PASSWORD_HASH=${AUTH_PASSWORD_HASH}
@@ -38,12 +38,12 @@ services:
 
   db:
     image: postgres:15-alpine
-    container_name: japanese-helper-db
+    container_name: yomi-sapo-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-securepassword}
-      POSTGRES_DB: japanese_helper
+      POSTGRES_DB: yomi_sapo
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -70,7 +70,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: japanese-helper-nginx
+    container_name: yomi-sapo-nginx
     restart: unless-stopped
     ports:
       - "80:80"
