@@ -10,6 +10,7 @@ import TTSButton from "@/app/components/reading/TTSButton";
 import { useSearchParams } from "next/navigation";
 import { COLORS, EXPLANATION_CONFIG, DARK_COLORS } from "@/lib/constants";
 import { parseFurigana, segmentsToHTML } from "@/lib/utils/furiganaParser";
+import { bookImagePath } from "@/lib/utils/bookAssetPath";
 import { guestKeyHeaders, promptGuestKeyOnFailure } from "@/lib/guestKeys";
 
 const IMAGE_PATTERN = /\[IMAGE:([^\]]+)\]/;
@@ -80,6 +81,7 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
   const [showTranslation, setShowTranslation] = useState(false);
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
+  const [unavailableImagePaths, setUnavailableImagePaths] = useState<ReadonlySet<string>>(() => new Set());
 
   useEffect(() => {
     const handleVocabularyModeChange = (event: Event) => {
@@ -365,6 +367,18 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
 
   const hasImage = IMAGE_PATTERN.test(head);
 
+  const resolveImage = (originalName: string) => {
+    const actualFileName =
+      imageMap?.[originalName] ||
+      imageMap?.[`image/${originalName}`] ||
+      originalName;
+    const imagePath = bookImagePath(bookDirectory ?? "", bookFileName ?? "", actualFileName);
+    return { actualFileName, imagePath };
+  };
+
+  const markImageUnavailable = (imagePath: string) =>
+    setUnavailableImagePaths((previous) => new Set(previous).add(imagePath));
+
   const parseContentWithImages = (content: string) => {
     const parts: Array<{ type: "text" | "image"; content: string }> = [];
     let lastIndex = 0;
@@ -420,22 +434,14 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
               </div>
             );
           } else {
-            const originalName = part.content;
-            const actualFileName =
-              imageMap?.[originalName] ||
-              imageMap?.[`image/${originalName}`] ||
-              originalName;
-            const isNestedDirectory = bookDirectory?.includes("/");
-            const imagePath = isNestedDirectory
-              ? `/${bookDirectory}/images/${actualFileName}`
-              : `/${bookDirectory}/${bookFileName?.replace(/-rephrase$/, "")}/images/${actualFileName}`;
-
+            const { actualFileName, imagePath } = resolveImage(part.content);
             return (
               <BookImage
                 key={index}
                 fileName={actualFileName}
                 imagePath={imagePath}
                 altText={`Illustration from ${bookFileName}`}
+                onUnavailable={() => markImageUnavailable(imagePath)}
               />
             );
           }
@@ -490,6 +496,17 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
   const hoverBg = isDarkMode
     ? "rgba(255, 255, 255, 0.06)"
     : "rgba(0, 0, 0, 0.04)";
+
+  // A line whose original is only illustrations, none of which exist, would be an empty card.
+  const headParts = hasImage ? parseContentWithImages(head) : [];
+  const isOnlyUnavailableImages =
+    headParts.length > 0 &&
+    headParts.every(
+      (part) => part.type === "image" && unavailableImagePaths.has(resolveImage(part.content).imagePath)
+    );
+  if (isOnlyUnavailableImages) {
+    return null;
+  }
 
   return (
     <div className="collapsibleItem" id={id} data-global-index={globalIndex} style={{ scrollMarginTop: '80px' }}>
