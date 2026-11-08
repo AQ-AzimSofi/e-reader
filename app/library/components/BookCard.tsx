@@ -16,6 +16,9 @@ interface BookCardProps {
 
 type CoverState = 'loading' | 'loaded' | 'missing';
 
+const FALLBACK_TITLE_CLASS =
+  'absolute inset-0 flex items-center justify-center px-4 text-center font-semibold text-base leading-snug';
+
 export default function BookCard({
   fileName,
   directory,
@@ -48,16 +51,13 @@ export default function BookCard({
         }}
       >
         <div className="relative aspect-[5/7]" style={{ backgroundColor: '#F2F2F7' }}>
-          {coverState === 'missing' && (
-            <div className="absolute inset-0 flex items-center justify-center px-4" style={{ backgroundColor: '#FFFFFF' }}>
-              <h3
-                className="text-center font-semibold text-base leading-snug"
-                style={{ color: '#1D1D1F' }}
-              >
-                {displayName}
-              </h3>
-            </div>
-          )}
+          {/* The heading stays for screen readers when the cover shows, so books remain navigable by heading. */}
+          <h3
+            className={coverState === 'missing' ? FALLBACK_TITLE_CLASS : 'sr-only'}
+            style={{ color: '#1D1D1F', backgroundColor: '#FFFFFF' }}
+          >
+            {displayName}
+          </h3>
 
           {coverState !== 'missing' && (
             // next/image would route through the image optimizer function, which this
@@ -65,7 +65,7 @@ export default function BookCard({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={coverUrl}
-              alt={displayName}
+              alt=""
               loading="lazy"
               decoding="async"
               onLoad={() => setCoverState('loaded')}
