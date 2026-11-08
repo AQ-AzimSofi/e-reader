@@ -1,6 +1,6 @@
 # Local Development Guide
 
-This guide will help you set up the Japanese Read Helper application for local development with Docker Compose.
+This guide will help you set up the よみサポ application for local development with Docker Compose.
 
 ## Prerequisites
 
@@ -14,7 +14,7 @@ This guide will help you set up the Japanese Read Helper application for local d
 ```bash
 # 1. Clone and install dependencies
 git clone <your-repo-url>
-cd japanese-read-helper
+cd yomi-sapo
 npm install
 
 # 2. Set up environment variables
@@ -217,7 +217,7 @@ npm run lint        # Run ESLint
 ## Project Structure
 
 ```
-japanese-read-helper/
+yomi-sapo/
 ├── app/                      # Next.js App Router
 │   ├── api/                 # API routes
 │   │   ├── init-db/        # Database initialization
@@ -360,7 +360,7 @@ CREATE TABLE text_entries (
 
 ## Next Steps
 
-- See [DEPLOYMENT.md](./DEPLOYMENT.md) for Vercel deployment instructions
+- See [DEPLOYMENT.md](./DEPLOYMENT.md) for production deployment
 - See [CLAUDE.md](./CLAUDE.md) for project architecture details
 
 ## Getting Help

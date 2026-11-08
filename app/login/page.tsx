@@ -55,7 +55,7 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-semibold" style={{ color: '#1D1D1F' }}>
-            Read Helper
+            よみサポ
           </h1>
           <p className="text-sm mt-1" style={{ color: '#8E8E93' }}>
             Japanese Reading Assistant

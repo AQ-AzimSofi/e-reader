@@ -1,11 +1,11 @@
 # Codebase Structure
 
-This document describes the project structure for the Japanese Read Helper application.
+This document describes the project structure for the よみサポ application.
 
 ## Directory Overview
 
 ```
-japanese-read-helper/
+yomi-sapo/
 ├── app/                    # Next.js App Router
 │   ├── api/                # API routes
 │   ├── components/         # Shared React components

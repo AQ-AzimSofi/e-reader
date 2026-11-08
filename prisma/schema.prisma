@@ -1,4 +1,4 @@
-// Prisma schema for Japanese Read Helper
+// Prisma schema for よみサポ
 // Database schema for books, images, bookmarks, and processing history
 
 generator client {

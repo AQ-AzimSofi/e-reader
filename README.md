@@ -1,12 +1,14 @@
-# Read Helper
+# よみサポ (yomi-sapo)
 
-Read Helper is a full-stack web app for Japanese language learners. It started as a tool for reading Visual Novels (capturing in-game text via Textractor and AI-rephrasing it for comprehension) and has grown into a complete reading app for books, with furigana, AI assistance, text-to-speech, and vocabulary tracking.
+よみサポ is a full-stack web app for Japanese language learners. It started as a tool for reading Visual Novels (capturing in-game text via Textractor and AI-rephrasing it for comprehension) and has grown into a complete reading app for books, with furigana, AI assistance, text-to-speech, and vocabulary tracking.
+
+Live at **https://yomi-sapo.click** (password login, with a guest preview of a few books).
 
 ---
 <details>
 <summary>Demo (Early prototype)</summary>
 
-This video demonstrates Read Helper in operation, showcasing its text processing and AI rephrasing capabilities.
+This video demonstrates よみサポ in operation, showcasing its text processing and AI rephrasing capabilities.
 
 https://github.com/user-attachments/assets/16d81533-e417-4123-b764-a0066d0b6c84
 </details>
@@ -42,7 +44,7 @@ https://github.com/user-attachments/assets/16d81533-e417-4123-b764-a0066d0b6c84
 
 ## EPUB Processing
 
-Read Helper can process EPUB files to extract text with furigana annotations and images for reading in the app.
+よみサポ can process EPUB files to extract text with furigana annotations and images for reading in the app.
 
 ### Prerequisites
 
@@ -110,7 +112,7 @@ Once processed, the book will automatically appear in the file selector dropdown
 
 ## Content Management (Database-Only Architecture)
 
-Read Helper uses a **database-first architecture** for managing book content. Text files are **not committed to the repository** to avoid copyright issues. Instead, content is stored in PostgreSQL and managed via admin API endpoints.
+よみサポ uses a **database-first architecture** for managing book content. Text files are **not committed to the repository** to avoid copyright issues. Instead, content is stored in PostgreSQL and managed via admin API endpoints.
 
 ### Quick Start
 
@@ -222,8 +224,9 @@ export ADMIN_API_KEY=your_key_here
 # Process and upload directly to database (no files created)
 python3 scripts/epub-to-text-furigana.py book.epub --output-mode api
 
-# Optional: Specify custom API URL (defaults to http://localhost:3333)
-export API_URL=https://your-app.vercel.app
+# Optional: target another local/LAN dev server (defaults to http://localhost:3333).
+# Production rejects API mode: it has no ADMIN_API_KEY.
+export API_URL=http://192.168.1.15:3001
 python3 scripts/epub-to-text-furigana.py book.epub --output-mode api
 ```
 
@@ -247,19 +250,15 @@ npm run dev         # Start Next.js (port 3333)
    - Books automatically appear in dropdown
    - All content served from database
 
-### Production Deployment (Vercel)
+### Production Deployment
 
-1. **Deploy to Vercel**:
-   - Vercel Postgres is automatically provisioned
-   - No manual database configuration needed
+Production runs at https://yomi-sapo.click on AWS (Lambda + CloudFront via SST, `ap-northeast-1`) with a Neon PostgreSQL database.
 
-2. **Set environment variables** in Vercel dashboard:
-   - `GEMINI_API_KEY`
-   - `ADMIN_API_KEY`
+1. **Deploy**: push to `main`. GitHub Actions runs `sst deploy --stage production`; the SST CLI does not run on Windows, so deploys only happen in CI.
 
-3. **Add books** to production:
-   - Use API mode: `export API_URL=https://your-app.vercel.app`
-   - Or use Swagger UI at `https://your-app.vercel.app/api-docs`
+2. **Secrets** live in AWS SSM Parameter Store (`ap-northeast-1`) as SecureString parameters named `yomi-sapo-production-<KEY>` (e.g. `GEMINI_API_KEY`, `DATABASE_URL`, `SESSION_SECRET`).
+
+3. **Add books** to production: process them locally, then push the new rows with `npm run db:sync` and choose `[2] Push missing to prod` (the startup/shutdown sync in `npm run dev` does the same). Both need `PROD_DATABASE_URL` (the Neon connection string) in `.env.local`. The sync covers database rows only (text, bookmarks, vocabulary); illustrations and metadata JSON under `public/bookv2-furigana/` are gitignored, so they never reach production. The admin API is local-only: production has no `ADMIN_API_KEY`, so `/api/admin` returns 401 there.
 
 ### Important Notes
 
@@ -267,8 +266,8 @@ npm run dev         # Start Next.js (port 3333)
 - **Images are gitignored** - book covers/illustrations not committed
 - **Database is the source of truth** - all text content stored in PostgreSQL
 - **Directory structure preserved** - `.gitkeep` files maintain folder structure
-- **ADMIN_API_KEY required** - generate a secure key for production
-- **Database backup** - recommended for production (Vercel handles automatically)
+- **ADMIN_API_KEY** - needed locally for the admin API and EPUB API mode; intentionally not set in production
+- **Database backup** - recommended for production (Neon PG17); before risky changes run `docker run --rm postgres:17-alpine pg_dump '<NEON_URL>' --no-owner --no-acl > backup.sql` (the local PG15 tools refuse a newer server)
 
 ### Migrating Existing Files
 
