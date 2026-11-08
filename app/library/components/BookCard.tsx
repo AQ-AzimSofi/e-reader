@@ -40,6 +40,7 @@ export default function BookCard({
   const readUrl = `/read?${bookParams}${pageParam}`;
   const coverUrl = `${API_ROUTES.BOOK_COVER}?${bookParams}`;
   const clampedProgress = Math.min(100, Math.max(0, progress));
+  const characterCount = totalCharacters ?? 0;
 
   return (
     <Link href={readUrl} className="block group">
@@ -104,9 +105,9 @@ export default function BookCard({
             <span style={{ color: '#8E8E93' }}>
               {Math.round(clampedProgress)}%
             </span>
-            {totalCharacters && (
+            {characterCount > 0 && (
               <span style={{ color: '#8E8E93' }}>
-                {totalCharacters.toLocaleString()} chars
+                {characterCount.toLocaleString()} chars
               </span>
             )}
           </div>
