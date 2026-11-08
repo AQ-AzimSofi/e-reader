@@ -3,7 +3,7 @@
 export default $config({
   app(input) {
     return {
-      name: "japanese-read-helper",
+      name: "yomi-sapo",
       removal: input?.stage === "production" ? "retain" : "remove",
       protect: ["production"].includes(input?.stage),
       home: "aws",
@@ -48,7 +48,7 @@ export default $config({
     // so a purchased recording is never reachable without a signed-in session.
     const narrationAudio = new sst.aws.Bucket("NarrationAudio");
 
-    const web = new sst.aws.Nextjs("JapaneseReadHelper", {
+    const web = new sst.aws.Nextjs("YomiSapo", {
       openNextVersion: "3.4.1",
       domain: stage === "production" ? "yomi-sapo.click" : undefined,
       link: [narrationAudio],
