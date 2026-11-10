@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DARK_COLORS } from '@/lib/constants';
+import { COLORS, DARK_COLORS } from '@/lib/constants';
+import { toTint } from '@/lib/utils/colorTint';
 
 interface CopyRangeModalProps {
   isOpen: boolean;
@@ -36,31 +37,30 @@ export default function CopyRangeModal({
 
   if (!isOpen) return null;
 
-  const surfaceBg = isDarkMode ? DARK_COLORS.SURFACE : '#FFFFFF';
-  const textColor = isDarkMode ? '#F5F5F7' : '#1D1D1F';
-  const mutedColor = isDarkMode ? '#8E8E93' : '#86868B';
-  const inputBg = isDarkMode ? 'rgba(255,255,255,0.08)' : '#F2F2F7';
-  const borderColor = isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const surfaceBg = isDarkMode ? DARK_COLORS.SURFACE : COLORS.SURFACE;
+  const textColor = isDarkMode ? DARK_COLORS.TEXT : COLORS.INK;
+  const mutedColor = isDarkMode ? DARK_COLORS.TEXT_MUTED : COLORS.SECONDARY;
+  const inputBg = isDarkMode ? DARK_COLORS.BASE : COLORS.SURFACE;
+  const borderColor = isDarkMode ? DARK_COLORS.NEUTRAL : COLORS.NEUTRAL;
+  const accentColor = isDarkMode ? DARK_COLORS.PRIMARY : COLORS.PRIMARY;
+  const onAccentColor = isDarkMode ? DARK_COLORS.BASE : COLORS.SURFACE;
 
   return (
     <div
       className="fixed inset-0 z-[10000] flex items-center justify-center"
       onClick={onClose}
-      style={{ backgroundColor: isDarkMode ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.3)' }}
+      style={{ backgroundColor: toTint(COLORS.INK, isDarkMode ? 60 : 30) }}
     >
       <div
-        className="rounded-2xl p-5 w-[280px]"
+        className="p-5 w-[280px]"
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: surfaceBg,
-          boxShadow: isDarkMode
-            ? '0 8px 32px rgba(0,0,0,0.5)'
-            : '0 8px 32px rgba(0,0,0,0.12)',
-          border: `1px solid ${borderColor}`,
+          border: `1px solid ${textColor}`,
         }}
       >
         <h3
-          className="text-[15px] font-semibold mb-4"
+          className="font-mincho font-bold text-[17px] tracking-[0.04em] mb-4"
           style={{ color: textColor }}
         >
           Copy Page Range
@@ -80,12 +80,12 @@ export default function CopyRangeModal({
               max={totalPages}
               value={fromPage}
               onChange={(e) => setFromPage(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-full px-3 py-2 rounded-lg text-[14px] text-center"
+              className="w-full px-3 py-2 text-[14px] text-center focus:outline-2"
               style={{
                 backgroundColor: inputBg,
                 color: textColor,
                 border: `1px solid ${borderColor}`,
-                outline: 'none',
+                outlineColor: accentColor,
               }}
             />
           </div>
@@ -108,12 +108,12 @@ export default function CopyRangeModal({
               max={totalPages}
               value={toPage}
               onChange={(e) => setToPage(Math.min(totalPages, parseInt(e.target.value) || 1))}
-              className="w-full px-3 py-2 rounded-lg text-[14px] text-center"
+              className="w-full px-3 py-2 text-[14px] text-center focus:outline-2"
               style={{
                 backgroundColor: inputBg,
                 color: textColor,
                 border: `1px solid ${borderColor}`,
-                outline: 'none',
+                outlineColor: accentColor,
               }}
             />
           </div>
@@ -129,9 +129,10 @@ export default function CopyRangeModal({
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl text-[13px] font-medium"
+            className="flex-1 min-h-11 px-3 text-sm font-bold interactive-page-btn"
             style={{
-              backgroundColor: inputBg,
+              backgroundColor: 'transparent',
+              border: `1px solid ${borderColor}`,
               color: textColor,
             }}
           >
@@ -140,10 +141,10 @@ export default function CopyRangeModal({
           <button
             onClick={() => isValid && onCopy(fromPage, toPage)}
             disabled={!isValid}
-            className="flex-1 py-2.5 rounded-xl text-[13px] font-medium disabled:opacity-30"
+            className="flex-1 min-h-11 px-3 text-sm font-bold disabled:opacity-30 interactive-btn"
             style={{
-              backgroundColor: copyFeedback ? '#34C759' : '#007AFF',
-              color: '#FFFFFF',
+              backgroundColor: copyFeedback ? COLORS.SUCCESS : accentColor,
+              color: copyFeedback ? COLORS.SURFACE : onAccentColor,
             }}
           >
             {copyFeedback ? 'Copied!' : 'Copy'}

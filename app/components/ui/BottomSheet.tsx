@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { DARK_COLORS } from '@/lib/constants';
+import { COLORS, DARK_COLORS } from '@/lib/constants';
+import { toTint } from '@/lib/utils/colorTint';
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -73,14 +74,17 @@ export default function BottomSheet({
     ? 'max-h-[50vh]'
     : 'max-h-[85vh]';
 
+  const surfaceColor = isDarkMode ? DARK_COLORS.SURFACE : COLORS.SURFACE;
+  const textColor = isDarkMode ? DARK_COLORS.TEXT : COLORS.INK;
+  const mutedColor = isDarkMode ? DARK_COLORS.TEXT_MUTED : COLORS.SECONDARY;
+  const ruleColor = isDarkMode ? DARK_COLORS.NEUTRAL : COLORS.NEUTRAL;
+
   return (
     <>
       <div
-        className="fixed inset-0 z-[100] transition-all duration-300"
+        className="fixed inset-0 z-[100] transition-colors duration-300"
         style={{
-          backgroundColor: animateIn ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0)',
-          backdropFilter: animateIn ? 'blur(4px)' : 'blur(0px)',
-          WebkitBackdropFilter: animateIn ? 'blur(4px)' : 'blur(0px)',
+          backgroundColor: animateIn ? toTint(COLORS.INK, 30) : 'transparent',
         }}
         onClick={onClose}
       />
@@ -89,9 +93,9 @@ export default function BottomSheet({
         ref={sheetRef}
         className={`fixed bottom-0 left-0 right-0 z-[101] ${heightClass} overflow-y-auto transition-transform duration-300${isDarkMode ? ' dark-sheet' : ''}`}
         style={{
-          backgroundColor: isDarkMode ? DARK_COLORS.SURFACE : '#FFFFFF',
-          borderRadius: '20px 20px 0 0',
-          boxShadow: isDarkMode ? '0 -4px 32px rgba(0,0,0,0.4)' : '0 -4px 32px rgba(0,0,0,0.12)',
+          backgroundColor: surfaceColor,
+          color: textColor,
+          borderTop: `1px solid ${textColor}`,
           transform: animateIn
             ? `translateY(${dragY}px)`
             : 'translateY(100%)',
@@ -103,18 +107,18 @@ export default function BottomSheet({
         onTouchEnd={handleTouchEnd}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 z-10 pt-2 pb-0" style={{ backgroundColor: isDarkMode ? DARK_COLORS.SURFACE : '#FFFFFF', borderRadius: '20px 20px 0 0' }}>
+        <div className="sticky top-0 z-10 pt-2 pb-0" style={{ backgroundColor: surfaceColor }}>
           <div className="flex justify-center mb-2">
-            <div className="w-9 h-1 rounded-full" style={{ backgroundColor: '#D1D1D6' }} />
+            <div className="w-9 h-0.5" style={{ backgroundColor: ruleColor }} />
           </div>
 
           {title && (
-            <div className="flex items-center justify-between px-5 pb-3" style={{ borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)' }}>
-              <h2 className="text-lg font-semibold" style={{ color: isDarkMode ? DARK_COLORS.TEXT : '#1D1D1F' }}>{title}</h2>
+            <div className="flex items-center justify-between px-5 pb-3" style={{ borderBottom: `1px solid ${ruleColor}` }}>
+              <h2 className="font-mincho font-bold text-lg tracking-[0.04em]" style={{ color: textColor }}>{title}</h2>
               <button
                 onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center rounded-full interactive-close"
-                style={{ backgroundColor: isDarkMode ? DARK_COLORS.NEUTRAL : '#F2F2F7', color: isDarkMode ? DARK_COLORS.TEXT : '#8E8E93' }}
+                className="w-8 h-8 flex items-center justify-center interactive-close"
+                style={{ backgroundColor: 'transparent', color: mutedColor }}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

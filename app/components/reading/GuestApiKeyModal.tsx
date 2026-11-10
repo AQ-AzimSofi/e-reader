@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { COLORS, DARK_COLORS } from '@/lib/constants';
+import { toTint } from '@/lib/utils/colorTint';
 import {
   type GuestKeyKind,
   getGuestKey,
@@ -56,22 +57,24 @@ export default function GuestApiKeyModal({ isDarkMode = false }: GuestApiKeyModa
     ? {
         card: DARK_COLORS.SURFACE,
         title: DARK_COLORS.TEXT,
-        help: '#A0A0A5',
-        inputBg: DARK_COLORS.NEUTRAL,
-        inputBorder: 'rgba(255,255,255,0.14)',
-        cancelBg: DARK_COLORS.NEUTRAL,
+        help: DARK_COLORS.TEXT_MUTED,
+        inputBg: DARK_COLORS.BASE,
+        inputBorder: DARK_COLORS.NEUTRAL,
+        cancelBg: 'transparent',
         cancelText: DARK_COLORS.TEXT,
         primary: DARK_COLORS.PRIMARY,
+        onPrimary: DARK_COLORS.BASE,
       }
     : {
-        card: '#FFFFFF',
-        title: '#1D1D1F',
-        help: '#636366',
-        inputBg: '#F2F2F7',
-        inputBorder: 'rgba(0,0,0,0.12)',
-        cancelBg: '#F2F2F7',
-        cancelText: '#1D1D1F',
+        card: COLORS.SURFACE,
+        title: COLORS.INK,
+        help: COLORS.SECONDARY,
+        inputBg: COLORS.SURFACE,
+        inputBorder: COLORS.NEUTRAL,
+        cancelBg: 'transparent',
+        cancelText: COLORS.INK,
         primary: COLORS.PRIMARY,
+        onPrimary: COLORS.SURFACE,
       };
 
   const handleSave = () => {
@@ -84,15 +87,15 @@ export default function GuestApiKeyModal({ isDarkMode = false }: GuestApiKeyModa
   return (
     <div
       className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+      style={{ backgroundColor: toTint(COLORS.INK, isDarkMode ? 60 : 40) }}
       onClick={() => setKind(null)}
     >
       <div
-        className="w-full max-w-md rounded-2xl p-6"
-        style={{ backgroundColor: theme.card, boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}
+        className="w-full max-w-md p-6"
+        style={{ backgroundColor: theme.card, border: `1px solid ${theme.title}` }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold mb-2" style={{ color: theme.title }}>
+        <h2 className="font-mincho font-bold text-lg tracking-[0.04em] mb-2" style={{ color: theme.title }}>
           {copy.title}
         </h2>
         <p className="text-sm mb-4 leading-relaxed" style={{ color: theme.help }}>
@@ -108,15 +111,20 @@ export default function GuestApiKeyModal({ isDarkMode = false }: GuestApiKeyModa
           }}
           placeholder="Paste your API key"
           autoFocus
-          className="w-full rounded-xl px-3 py-2.5 text-sm mb-3"
-          style={{ border: `1px solid ${theme.inputBorder}`, backgroundColor: theme.inputBg, color: theme.title }}
+          className="w-full px-3 py-2.5 text-sm mb-3 focus:outline-2"
+          style={{
+            border: `1px solid ${theme.inputBorder}`,
+            backgroundColor: theme.inputBg,
+            color: theme.title,
+            outlineColor: theme.primary,
+          }}
         />
 
         <a
           href={copy.link}
           target="_blank"
           rel="noreferrer"
-          className="text-sm font-medium interactive-link"
+          className="text-sm font-bold underline underline-offset-4 interactive-link"
           style={{ color: theme.primary }}
         >
           {copy.linkLabel}
@@ -125,16 +133,20 @@ export default function GuestApiKeyModal({ isDarkMode = false }: GuestApiKeyModa
         <div className="flex justify-end gap-2 mt-5">
           <button
             onClick={() => setKind(null)}
-            className="px-4 py-2 rounded-xl text-sm font-medium"
-            style={{ backgroundColor: theme.cancelBg, color: theme.cancelText }}
+            className="min-h-11 px-5 text-sm font-bold interactive-page-btn"
+            style={{
+              backgroundColor: theme.cancelBg,
+              border: `1px solid ${theme.inputBorder}`,
+              color: theme.cancelText,
+            }}
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={!value.trim()}
-            className="px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40"
-            style={{ backgroundColor: theme.primary, color: '#FFFFFF' }}
+            className="min-h-11 px-5 text-sm font-bold disabled:opacity-40 interactive-btn"
+            style={{ backgroundColor: theme.primary, color: theme.onPrimary }}
           >
             Save key
           </button>
