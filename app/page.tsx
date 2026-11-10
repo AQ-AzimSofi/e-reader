@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { READER_THEME, COLORS } from '@/lib/constants';
+import { COLORS } from '@/lib/constants';
 
 export default function Home() {
   const router = useRouter();
@@ -14,13 +14,13 @@ export default function Home() {
   return (
     <div
       className="min-h-screen flex items-center justify-center"
-      style={{ backgroundColor: READER_THEME.SURFACE_MUTED }}
+      style={{ backgroundColor: COLORS.BASE }}
     >
       <div
-        className="w-12 h-12 border-4 rounded-full animate-spin"
+        className="w-8 h-8 border-2 rounded-full animate-spin"
         style={{
           borderColor: COLORS.NEUTRAL,
-          borderTopColor: COLORS.PRIMARY,
+          borderTopColor: COLORS.INK,
         }}
       />
     </div>

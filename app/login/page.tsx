@@ -2,7 +2,8 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { API_ROUTES } from '@/lib/constants';
+import { API_ROUTES, COLORS } from '@/lib/constants';
+import { toTint } from '@/lib/utils/colorTint';
 
 export default function LoginPage() {
   const [password, setPassword] = useState('');
@@ -40,41 +41,41 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#F2F2F7' }}>
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{ backgroundColor: COLORS.BASE, color: COLORS.INK }}
+    >
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div
-            className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-            style={{
-              backgroundColor: '#007AFF',
-              boxShadow: '0 4px 16px rgba(0, 122, 255, 0.25)',
-            }}
+            className="w-14 h-14 mx-auto mb-5 flex items-center justify-center"
+            style={{ backgroundColor: COLORS.PRIMARY, color: COLORS.SURFACE }}
           >
-            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
             </svg>
           </div>
-          <h1 className="text-2xl font-semibold" style={{ color: '#1D1D1F' }}>
+          <h1 className="font-mincho font-bold text-[28px] tracking-[0.04em]" style={{ color: COLORS.INK }}>
             よみサポ
           </h1>
-          <p className="text-sm mt-1" style={{ color: '#8E8E93' }}>
+          <p className="text-xs mt-2 tracking-[0.12em]" style={{ color: COLORS.SECONDARY }}>
             Japanese Reading Assistant
           </p>
         </div>
 
         <form
           onSubmit={handleLogin}
-          className="rounded-2xl p-6"
+          className="p-6 border"
           style={{
-            backgroundColor: '#FFFFFF',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.04)',
+            backgroundColor: COLORS.SURFACE,
+            borderColor: COLORS.NEUTRAL,
           }}
         >
           <div className="mb-5">
             <label
               htmlFor="password"
-              className="block text-xs font-medium mb-1.5 uppercase tracking-wide"
-              style={{ color: '#8E8E93' }}
+              className="block text-xs font-bold mb-2 uppercase tracking-[0.12em]"
+              style={{ color: COLORS.SECONDARY }}
             >
               Password
             </label>
@@ -86,11 +87,11 @@ export default function LoginPage() {
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               placeholder="Enter password"
-              className="w-full px-4 py-3 rounded-xl text-base outline-none transition-all duration-200"
+              className="w-full px-4 py-3 text-base outline-none transition-colors duration-200"
               style={{
-                backgroundColor: '#F2F2F7',
-                border: `2px solid ${isFocused ? '#007AFF' : 'transparent'}`,
-                color: '#1D1D1F',
+                backgroundColor: COLORS.SURFACE,
+                border: `1px solid ${isFocused ? COLORS.INK : COLORS.NEUTRAL}`,
+                color: COLORS.INK,
               }}
               required={true}
               disabled={loading}
@@ -99,10 +100,11 @@ export default function LoginPage() {
 
           {error && (
             <div
-              className="mb-4 px-4 py-3 rounded-xl text-sm"
+              className="mb-4 px-4 py-3 text-sm border"
               style={{
-                backgroundColor: 'rgba(255, 59, 48, 0.08)',
-                color: '#FF3B30',
+                backgroundColor: toTint(COLORS.DANGER, 8),
+                borderColor: COLORS.DANGER,
+                color: COLORS.DANGER,
               }}
             >
               {error}
@@ -112,9 +114,10 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 rounded-xl font-semibold text-white text-base interactive-btn disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full min-h-11 px-5 text-sm font-bold interactive-btn disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
-              backgroundColor: loading ? '#8E8E93' : '#007AFF',
+              backgroundColor: loading ? COLORS.SECONDARY : COLORS.PRIMARY,
+              color: COLORS.SURFACE,
             }}
           >
             {loading ? 'Signing in...' : 'Sign In'}
