@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
+import { COLORS, DARK_COLORS } from '@/lib/constants';
+import { toTint } from '@/lib/utils/colorTint';
 
 interface ReaderFABProps {
   onToggleFurigana: () => void;
@@ -234,7 +236,7 @@ export default function ReaderFAB({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
         </svg>
       ),
-      label: isOnBookmarkPage ? 'Scroll to Bookmark' : `Go to p.${bookmarkPage}`,
+      label: isOnBookmarkPage ? '栞の位置へ' : `栞のページへ (p.${bookmarkPage})`,
       action: onGoToBookmark || (() => {}),
       active: isOnBookmarkPage,
       hidden: !hasBookmark || !onGoToBookmark,
@@ -245,7 +247,7 @@ export default function ReaderFAB({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
         </svg>
       ),
-      label: copyFeedback ? 'Copied!' : 'Copy Page',
+      label: copyFeedback ? 'コピーしました' : 'ページをコピー',
       action: onCopyPageText,
       active: copyFeedback,
       keepOpen: true,
@@ -256,7 +258,7 @@ export default function ReaderFAB({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h10" />
         </svg>
       ),
-      label: 'Copy Range',
+      label: '範囲をコピー',
       action: onCopyPageRange,
     },
     {
@@ -270,14 +272,14 @@ export default function ReaderFAB({
           <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" />
         </svg>
       ),
-      label: hasPriority ? 'Clear Priority' : isPrioritizing ? 'Analyzing...' : 'Prioritize',
+      label: hasPriority ? '重要度を消す' : isPrioritizing ? '分析中…' : '重要度を分析',
       action: onPrioritize,
       active: Boolean(hasPriority),
       beta: true,
     },
     {
       icon: <span className="text-xs font-semibold">R</span>,
-      label: showRephrase ? 'Hide Rephrase' : 'Show Rephrase',
+      label: showRephrase ? 'やさしい文を隠す' : 'やさしい文を表示',
       action: onToggleRephrase,
       active: showRephrase,
     },
@@ -287,7 +289,7 @@ export default function ReaderFAB({
           {'\u3042'}
         </span>
       ),
-      label: 'Furigana',
+      label: 'ふりがな',
       action: onToggleFurigana,
       active: isFuriganaEnabled,
     },
@@ -297,7 +299,7 @@ export default function ReaderFAB({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       ),
-      label: 'Ruby Lookup',
+      label: 'ルビ検索',
       action: onToggleRubyLookup,
     },
     {
@@ -310,7 +312,7 @@ export default function ReaderFAB({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
         </svg>
       ),
-      label: isDarkMode ? 'Light Mode' : 'Dark Mode',
+      label: isDarkMode ? 'ライトモード' : 'ダークモード',
       action: onToggleDarkMode,
       active: isDarkMode,
     },
@@ -320,7 +322,7 @@ export default function ReaderFAB({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
         </svg>
       ),
-      label: 'Settings',
+      label: '表示設定',
       action: onOpenSettings,
     },
   ];
@@ -331,10 +333,11 @@ export default function ReaderFAB({
 
   if (!mounted) return null;
 
-  const surfaceBg = isDarkMode ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.95)';
-  const textColor = isDarkMode ? '#F5F5F7' : '#1D1D1F';
-  const activeColor = '#007AFF';
-  const activeBg = isDarkMode ? 'rgba(10,132,255,0.15)' : 'rgba(0,122,255,0.1)';
+  const surfaceBg = isDarkMode ? DARK_COLORS.SURFACE : COLORS.SURFACE;
+  const textColor = isDarkMode ? DARK_COLORS.TEXT : COLORS.INK;
+  const ruleColor = isDarkMode ? DARK_COLORS.NEUTRAL : COLORS.NEUTRAL;
+  const activeColor = isDarkMode ? DARK_COLORS.PRIMARY : COLORS.PRIMARY;
+  const activeBg = toTint(activeColor, 12);
 
   return (
     <>
@@ -368,10 +371,7 @@ export default function ReaderFAB({
               <div
                 style={{
                   backgroundColor: surfaceBg,
-                  backdropFilter: 'blur(20px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-                  borderRadius: '14px',
-                  border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)',
+                  border: `1px solid ${textColor}`,
                   boxShadow: isDarkMode
                     ? '0 8px 32px rgba(0,0,0,0.5)'
                     : '0 8px 32px rgba(0,0,0,0.12)',
@@ -387,13 +387,11 @@ export default function ReaderFAB({
                       e.stopPropagation();
                       handleAction(btn.action, btn.keepOpen);
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 interactive-nav-btn"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 font-gothic interactive-nav-btn"
                     style={{
                       backgroundColor: btn.active ? activeBg : 'transparent',
                       color: btn.active ? activeColor : textColor,
-                      borderBottom: index < visibleButtons.length - 1
-                        ? (isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)')
-                        : 'none',
+                      borderBottom: index < visibleButtons.length - 1 ? `1px solid ${ruleColor}` : 'none',
                     }}
                   >
                     <span className="flex items-center justify-center w-5 h-5 flex-shrink-0">
@@ -402,8 +400,8 @@ export default function ReaderFAB({
                     <span className="text-[13px] font-medium whitespace-nowrap">{btn.label}</span>
                     {btn.beta && (
                       <span
-                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                        style={{ backgroundColor: '#FF9500', color: '#FFFFFF', letterSpacing: '0.5px' }}
+                        className="text-[9px] font-bold px-1.5 py-0.5"
+                        style={{ backgroundColor: COLORS.START_CURSOR, color: COLORS.SURFACE, letterSpacing: '0.5px' }}
                       >
                         BETA
                       </span>
@@ -421,16 +419,15 @@ export default function ReaderFAB({
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onClick={handleFabClick}
+            aria-label="読書メニュー"
+            aria-expanded={isExpanded}
             className="relative select-none flex items-center justify-center"
             style={{
               width: `${FAB_SIZE}px`,
               height: `${FAB_SIZE}px`,
-              borderRadius: '16px',
-              backgroundColor: isDarkMode ? 'rgba(44,44,46,0.9)' : 'rgba(255,255,255,0.9)',
-              backdropFilter: 'blur(20px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-              color: isExpanded ? '#8E8E93' : '#007AFF',
-              border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)',
+              backgroundColor: textColor,
+              color: isDarkMode ? DARK_COLORS.BASE : COLORS.SURFACE,
+              border: 'none',
               boxShadow: isDragging
                 ? (isDarkMode ? '0 8px 32px rgba(0,0,0,0.6)' : '0 8px 32px rgba(0,0,0,0.18)')
                 : (isDarkMode ? '0 2px 16px rgba(0,0,0,0.4)' : '0 2px 16px rgba(0,0,0,0.1)'),

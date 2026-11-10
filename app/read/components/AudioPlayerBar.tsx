@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { DARK_COLORS, READER_THEME, TTS_CONFIG } from '@/lib/constants';
+import { COLORS, DARK_COLORS, READER_THEME, TTS_CONFIG } from '@/lib/constants';
 import type { AudioBookContentMode } from '@/lib/types';
 import type { AudioBookStatus } from '@/app/hooks/useAudioBook';
 
 const CONTENT_MODES: { value: AudioBookContentMode; label: string }[] = [
-  { value: 'main', label: 'Main' },
-  { value: 'sub', label: 'Sub' },
-  { value: 'both', label: 'Both' },
+  { value: 'main', label: '原文' },
+  { value: 'sub', label: 'やさしく' },
+  { value: 'both', label: '両方' },
 ];
 
 interface AudioPlayerBarProps {
@@ -103,10 +103,12 @@ export default function AudioPlayerBar({
   onClose,
 }: AudioPlayerBarProps) {
   const surface = isDarkMode ? DARK_COLORS.SURFACE : READER_THEME.SURFACE;
-  const textColor = isDarkMode ? DARK_COLORS.TEXT : '#1D1D1F';
-  const subtle = isDarkMode ? '#9A9AA0' : '#8E8E93';
+  const textColor = isDarkMode ? DARK_COLORS.TEXT : COLORS.INK;
+  const subtle = isDarkMode ? DARK_COLORS.TEXT_MUTED : COLORS.SECONDARY;
   const accent = isDarkMode ? DARK_COLORS.PRIMARY : READER_THEME.PROGRESS_FILL;
   const trackColor = isDarkMode ? DARK_COLORS.NEUTRAL : READER_THEME.PROGRESS_TRACK;
+  const ruleColor = isDarkMode ? DARK_COLORS.NEUTRAL : COLORS.NEUTRAL;
+  const onInkColor = isDarkMode ? DARK_COLORS.BASE : COLORS.SURFACE;
 
   const position = total > 0 ? Math.min(total, Math.max(0, index + 1)) : 0;
   const progressPercent = total > 0 ? (position / total) * 100 : 0;
@@ -134,7 +136,7 @@ export default function AudioPlayerBar({
     background: 'none',
     cursor: 'pointer',
     color: textColor,
-    borderRadius: 10,
+    borderRadius: 2,
     width: 40,
     height: 40,
     flexShrink: 0,
@@ -149,11 +151,10 @@ export default function AudioPlayerBar({
         bottom: 0,
         zIndex: 40,
         backgroundColor: surface,
-        borderTop: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
-        boxShadow: '0 -2px 16px rgba(0,0,0,0.10)',
+        borderTop: `1px solid ${textColor}`,
       }}
     >
-      <div style={{ position: 'relative', height: 3, backgroundColor: trackColor }}>
+      <div style={{ position: 'relative', height: 2, backgroundColor: trackColor }}>
         <div
           style={{
             position: 'absolute',
@@ -179,19 +180,18 @@ export default function AudioPlayerBar({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <button style={ghostButtonStyle} onClick={onPrev} aria-label="Previous sentence">
+          <button style={ghostButtonStyle} onClick={onPrev} aria-label="前の文">
             <PrevGlyph />
           </button>
           <button
             onClick={onTogglePlay}
-            aria-label={isPlaying ? 'Pause' : 'Play'}
+            aria-label={isPlaying ? '一時停止' : '再生'}
             style={{
               ...ghostButtonStyle,
               width: 48,
               height: 48,
-              borderRadius: 24,
-              backgroundColor: accent,
-              color: '#FFFFFF',
+              backgroundColor: textColor,
+              color: onInkColor,
             }}
           >
             {isLoading ? (
@@ -203,8 +203,8 @@ export default function AudioPlayerBar({
                   borderRadius: '50%',
                   borderWidth: 2,
                   borderStyle: 'solid',
-                  borderColor: 'rgba(255,255,255,0.4)',
-                  borderTopColor: '#FFFFFF',
+                  borderColor: subtle,
+                  borderTopColor: onInkColor,
                 }}
               />
             ) : isPlaying ? (
@@ -213,10 +213,10 @@ export default function AudioPlayerBar({
               <PlayGlyph />
             )}
           </button>
-          <button style={ghostButtonStyle} onClick={onNext} aria-label="Next sentence">
+          <button style={ghostButtonStyle} onClick={onNext} aria-label="次の文">
             <NextGlyph />
           </button>
-          <button style={ghostButtonStyle} onClick={onReplay} aria-label="Replay current sentence" title="Replay current sentence">
+          <button style={ghostButtonStyle} onClick={onReplay} aria-label="この文をもう一度" title="この文をもう一度">
             <ReplayGlyph />
           </button>
         </div>
@@ -224,9 +224,7 @@ export default function AudioPlayerBar({
         <div
           style={{
             display: 'inline-flex',
-            borderRadius: 9,
-            padding: 2,
-            backgroundColor: isDarkMode ? DARK_COLORS.NEUTRAL : '#E5E5EA',
+            border: `1px solid ${ruleColor}`,
           }}
         >
           {CONTENT_MODES.map((mode) => {
@@ -236,15 +234,13 @@ export default function AudioPlayerBar({
                 key={mode.value}
                 onClick={() => onContentModeChange(mode.value)}
                 style={{
-                  padding: '5px 12px',
-                  borderRadius: 7,
+                  padding: '6px 12px',
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: 13,
-                  fontWeight: active ? 600 : 400,
-                  backgroundColor: active ? surface : 'transparent',
-                  color: active ? textColor : subtle,
-                  boxShadow: active ? '0 1px 2px rgba(0,0,0,0.12)' : 'none',
+                  fontWeight: active ? 700 : 400,
+                  backgroundColor: active ? textColor : 'transparent',
+                  color: active ? onInkColor : subtle,
                 }}
               >
                 {mode.label}
@@ -260,26 +256,24 @@ export default function AudioPlayerBar({
               fontSize: 12,
               fontWeight: 600,
               padding: '4px 9px',
-              borderRadius: 7,
-              color: '#FFFFFF',
-              backgroundColor: '#FF3B30',
+              color: COLORS.SURFACE,
+              backgroundColor: COLORS.DANGER,
             }}
           >
             {playbackError}
           </span>
         ) : hasNarration && contentMode !== 'sub' && (
           <span
-            title="Playing the audiobook recording. Rephrased text still uses text-to-speech."
+            title="オーディオブックの朗読を再生しています。やさしい文は音声合成のままです。"
             style={{
               fontSize: 12,
-              fontWeight: 600,
-              padding: '4px 9px',
-              borderRadius: 7,
+              fontWeight: 700,
+              padding: '3px 9px',
               color: accent,
-              backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+              border: `1px solid ${accent}`,
             }}
           >
-            Narration
+            朗読
           </span>
         )}
 
@@ -290,18 +284,17 @@ export default function AudioPlayerBar({
           <div ref={speedRef} style={{ position: 'relative', display: 'flex' }}>
             <button
               onClick={() => setSpeedOpen((open) => !open)}
-              aria-label="Playback speed"
+              aria-label="再生速度"
               aria-expanded={speedOpen}
               style={{
                 border: 'none',
-                background: speedOpen ? (isDarkMode ? DARK_COLORS.NEUTRAL : '#E5E5EA') : 'none',
+                background: speedOpen ? trackColor : 'none',
                 cursor: 'pointer',
                 color: textColor,
                 fontSize: 13,
                 fontWeight: 600,
                 fontVariantNumeric: 'tabular-nums',
                 padding: '6px 8px',
-                borderRadius: 8,
                 minWidth: 46,
               }}
             >
@@ -315,10 +308,8 @@ export default function AudioPlayerBar({
                   right: 0,
                   marginBottom: 10,
                   padding: '12px 14px',
-                  borderRadius: 12,
                   backgroundColor: surface,
-                  border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
-                  boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
+                  border: `1px solid ${textColor}`,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -332,7 +323,7 @@ export default function AudioPlayerBar({
                   step={TTS_CONFIG.SPEED_STEP}
                   value={speed}
                   onChange={(e) => onSpeedChange(parseFloat(e.target.value))}
-                  aria-label="Playback speed"
+                  aria-label="再生速度"
                   style={{ width: 140, accentColor: accent, cursor: 'pointer' }}
                 />
                 <span style={{ fontSize: 13, fontWeight: 600, color: textColor, fontVariantNumeric: 'tabular-nums' }}>
@@ -343,21 +334,21 @@ export default function AudioPlayerBar({
           </div>
           <button
             onClick={onToggleKeyboardMode}
-            aria-label="Toggle keyboard control mode"
+            aria-label="キーボード操作モード"
             aria-pressed={keyboardMode}
             style={{
               ...ghostButtonStyle,
               width: 36,
               height: 36,
-              color: keyboardMode ? '#FFFFFF' : subtle,
-              backgroundColor: keyboardMode ? accent : 'transparent',
+              color: keyboardMode ? onInkColor : subtle,
+              backgroundColor: keyboardMode ? textColor : 'transparent',
             }}
           >
             <KeyboardGlyph />
           </button>
           <button
             onClick={onClose}
-            aria-label="Close audiobook player"
+            aria-label="プレーヤーを閉じる"
             style={{ ...ghostButtonStyle, width: 36, height: 36, color: subtle }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
