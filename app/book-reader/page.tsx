@@ -6,7 +6,7 @@ import { useEffect, useState, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Sidebar from "@/app/components/ui/Sidebar";
 import ReadingControls from "@/app/components/reading/ReadingControls";
-import { CSS_VARS, STORAGE_KEYS, EXPLANATION_CONFIG, READER_CONFIG } from "@/lib/constants";
+import { COLORS, STORAGE_KEYS, EXPLANATION_CONFIG, READER_CONFIG } from "@/lib/constants";
 
 // Lazy load heavy components
 const ExplanationSidebar = dynamic(
@@ -262,16 +262,16 @@ function BookReaderContent({ directoryParam, fileNameParam }: { directoryParam: 
     return (
       <div className="mx-2 md:mx-12 lg:mx-36 my-5 pb-24 md:pb-5">
         <div
-          className="p-6 border rounded-lg"
+          className="p-6 border"
           style={{
-            backgroundColor: CSS_VARS.BASE,
-            borderColor: CSS_VARS.PRIMARY,
+            backgroundColor: COLORS.SURFACE,
+            borderColor: COLORS.NEUTRAL,
           }}
         >
-          <h2 className="text-xl font-bold mb-4" style={{ color: CSS_VARS.PRIMARY }}>
+          <h2 className="font-mincho font-bold text-xl mb-4" style={{ color: COLORS.INK }}>
             テキストファイルが見つかりません
           </h2>
-          <p className="mb-4">
+          <p className="text-sm mb-4" style={{ color: COLORS.SECONDARY }}>
             public/ ディレクトリに .txt ファイルを追加してください。
           </p>
         </div>
@@ -281,7 +281,7 @@ function BookReaderContent({ directoryParam, fileNameParam }: { directoryParam: 
 
   // データ読み込み中
   if (!inputText || !isInitialLoadComplete) {
-    return <div className="mx-2 md:mx-12 lg:mx-36 my-5 pb-24 md:pb-5">コンテンツを読み込み中...</div>;
+    return <div className="mx-2 md:mx-12 lg:mx-36 my-5 pb-24 md:pb-5 text-sm" style={{ color: COLORS.SECONDARY }}>コンテンツを読み込み中...</div>;
   }
 
   return (
@@ -337,7 +337,7 @@ function BookReaderContent({ directoryParam, fileNameParam }: { directoryParam: 
 // Main export with Suspense boundary
 export default function BookReader() {
   return (
-    <Suspense fallback={<div className="mx-2 md:mx-12 lg:mx-36 my-5 pb-24 md:pb-5">読み込み中...</div>}>
+    <Suspense fallback={<div className="mx-2 md:mx-12 lg:mx-36 my-5 pb-24 md:pb-5 text-sm" style={{ color: COLORS.SECONDARY }}>読み込み中...</div>}>
       <SearchParamsReader>
         {({ directory, fileName }) => (
           <BookReaderContent directoryParam={directory} fileNameParam={fileName} />

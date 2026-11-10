@@ -3,7 +3,8 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { CSS_VARS, API_ROUTES } from '@/lib/constants';
+import { COLORS, API_ROUTES } from '@/lib/constants';
+import { toTint } from '@/lib/utils/colorTint';
 import { useRubyRegistry } from '@/app/hooks/useRubyRegistry';
 import type { TextFileListResponse, RubyEntry } from '@/lib/types';
 
@@ -12,6 +13,12 @@ interface BookOption {
   bookName: string;
   label: string;
 }
+
+const INPUT_STYLE = {
+  backgroundColor: COLORS.SURFACE,
+  borderColor: COLORS.NEUTRAL,
+  '--tw-ring-color': COLORS.PRIMARY,
+} as React.CSSProperties;
 
 function RubyRegistryContent() {
   const searchParams = useSearchParams();
@@ -127,19 +134,19 @@ function RubyRegistryContent() {
   const filteredEntries = searchQuery ? searchEntries(searchQuery) : (registry?.entries || []);
 
   return (
-    <div className="min-h-screen pt-24 pb-8 px-4">
+    <div className="min-h-screen pt-24 pb-8 px-4" style={{ color: COLORS.INK }}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Ruby Registry</h1>
-          <p className="text-gray-600">
+          <h1 className="font-mincho font-bold text-3xl mb-2">Ruby Registry</h1>
+          <p className="text-sm" style={{ color: COLORS.SECONDARY }}>
             Character name readings and special vocabulary lookups
           </p>
         </div>
 
         {/* Book Selector */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium mb-2" style={{ color: COLORS.SECONDARY_DARK }}>
             Select Book
           </label>
           <select
@@ -148,10 +155,8 @@ function RubyRegistryContent() {
               const book = books.find(b => b.label === e.target.value);
               setSelectedBook(book || null);
             }}
-            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 bg-white"
-            style={{
-              borderColor: CSS_VARS.NEUTRAL,
-            }}
+            className="w-full p-3 border focus:outline-none focus:ring-2"
+            style={INPUT_STYLE}
           >
             <option value="">Select a book...</option>
             {books.map((book) => (
@@ -171,8 +176,8 @@ function RubyRegistryContent() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search entries..."
-                className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 bg-white"
-                style={{ borderColor: CSS_VARS.NEUTRAL }}
+                className="flex-1 p-3 border focus:outline-none focus:ring-2"
+                style={INPUT_STYLE}
               />
               <button
                 onClick={() => {
@@ -180,8 +185,8 @@ function RubyRegistryContent() {
                   setEditingEntry(null);
                   setFormData({ kanji: '', reading: '', note: '' });
                 }}
-                className="px-6 py-3 rounded-lg font-medium shadow-sm transition-all hover:shadow-md"
-                style={{ backgroundColor: CSS_VARS.PRIMARY, color: 'white' }}
+                className="min-h-11 px-5 text-sm font-bold interactive-btn"
+                style={{ backgroundColor: COLORS.PRIMARY, color: COLORS.SURFACE }}
               >
                 + Add Entry
               </button>
@@ -190,54 +195,54 @@ function RubyRegistryContent() {
             {/* Add/Edit Form */}
             {showAddForm && (
               <div
-                className="mb-6 p-4 rounded-lg border"
-                style={{ borderColor: CSS_VARS.NEUTRAL, backgroundColor: 'white' }}
+                className="mb-6 p-4 border"
+                style={{ borderColor: COLORS.NEUTRAL, backgroundColor: COLORS.SURFACE }}
               >
-                <h3 className="font-medium mb-4">
+                <h3 className="font-bold mb-4">
                   {editingEntry ? 'Edit Entry' : 'Add New Entry'}
                 </h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Kanji</label>
+                      <label className="block text-sm mb-1" style={{ color: COLORS.SECONDARY }}>Kanji</label>
                       <input
                         type="text"
                         value={formData.kanji}
                         onChange={(e) => setFormData({ ...formData, kanji: e.target.value })}
-                        className="w-full p-2 border rounded focus:outline-none focus:ring-2"
-                        style={{ borderColor: CSS_VARS.NEUTRAL }}
+                        className="w-full p-2 border focus:outline-none focus:ring-2 disabled:opacity-50"
+                        style={INPUT_STYLE}
                         placeholder="e.g., 月"
                         disabled={!!editingEntry}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Reading</label>
+                      <label className="block text-sm mb-1" style={{ color: COLORS.SECONDARY }}>Reading</label>
                       <input
                         type="text"
                         value={formData.reading}
                         onChange={(e) => setFormData({ ...formData, reading: e.target.value })}
-                        className="w-full p-2 border rounded focus:outline-none focus:ring-2"
-                        style={{ borderColor: CSS_VARS.NEUTRAL }}
+                        className="w-full p-2 border focus:outline-none focus:ring-2"
+                        style={INPUT_STYLE}
                         placeholder="e.g., るな"
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Note (optional)</label>
+                    <label className="block text-sm mb-1" style={{ color: COLORS.SECONDARY }}>Note (optional)</label>
                     <input
                       type="text"
                       value={formData.note}
                       onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                      className="w-full p-2 border rounded focus:outline-none focus:ring-2"
-                      style={{ borderColor: CSS_VARS.NEUTRAL }}
+                      className="w-full p-2 border focus:outline-none focus:ring-2"
+                      style={INPUT_STYLE}
                       placeholder="e.g., main character"
                     />
                   </div>
                   <div className="flex gap-2">
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded font-medium"
-                      style={{ backgroundColor: CSS_VARS.PRIMARY, color: 'white' }}
+                      className="min-h-11 px-5 text-sm font-bold interactive-btn"
+                      style={{ backgroundColor: COLORS.PRIMARY, color: COLORS.SURFACE }}
                     >
                       {editingEntry ? 'Update' : 'Add'}
                     </button>
@@ -247,8 +252,8 @@ function RubyRegistryContent() {
                         setShowAddForm(false);
                         setEditingEntry(null);
                       }}
-                      className="px-4 py-2 rounded font-medium border"
-                      style={{ borderColor: CSS_VARS.NEUTRAL }}
+                      className="min-h-11 px-5 text-sm border interactive-page-btn"
+                      style={{ borderColor: COLORS.INK }}
                     >
                       Cancel
                     </button>
@@ -259,10 +264,17 @@ function RubyRegistryContent() {
 
             {/* Loading / Error */}
             {isLoading && (
-              <div className="text-center py-8 text-gray-500">Loading...</div>
+              <div className="text-center py-8 text-sm" style={{ color: COLORS.SECONDARY }}>Loading...</div>
             )}
             {error && (
-              <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg mb-6">
+              <div
+                className="p-4 border text-sm mb-6"
+                style={{
+                  backgroundColor: toTint(COLORS.DANGER, 7),
+                  borderColor: COLORS.DANGER,
+                  color: COLORS.DANGER,
+                }}
+              >
                 {error.message}
               </div>
             )}
@@ -271,13 +283,13 @@ function RubyRegistryContent() {
             {!isLoading && registry && (
               <>
                 <div className="mb-4">
-                  <h2 className="text-lg font-medium">
+                  <h2 className="font-mincho font-bold text-lg">
                     Entries ({filteredEntries.length})
                   </h2>
                 </div>
 
                 {filteredEntries.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-sm" style={{ color: COLORS.SECONDARY }}>
                     {searchQuery ? 'No matching entries found' : 'No entries yet'}
                   </div>
                 ) : (
@@ -285,22 +297,22 @@ function RubyRegistryContent() {
                     {filteredEntries.map((entry) => (
                       <div
                         key={entry.kanji}
-                        className="flex items-center justify-between p-3 rounded-lg border hover:shadow-sm transition-shadow"
-                        style={{ borderColor: CSS_VARS.NEUTRAL, backgroundColor: 'white' }}
+                        className="flex items-center justify-between p-3 border"
+                        style={{ borderColor: COLORS.NEUTRAL, backgroundColor: COLORS.SURFACE }}
                       >
                         <div className="flex items-center gap-4">
-                          <span className="text-xl font-medium" style={{ color: CSS_VARS.PRIMARY }}>
+                          <span className="font-mincho font-bold text-xl">
                             {entry.kanji}
                           </span>
-                          <span className="text-lg">{entry.reading}</span>
+                          <span className="font-mincho text-lg">{entry.reading}</span>
                           {entry.note && (
-                            <span className="text-sm text-gray-500">({entry.note})</span>
+                            <span className="text-sm" style={{ color: COLORS.SECONDARY }}>({entry.note})</span>
                           )}
                           <span
-                            className="text-xs px-2 py-0.5 rounded"
+                            className="text-xs px-2 py-0.5 border"
                             style={{
-                              backgroundColor: entry.source === 'epub' ? '#e0f2fe' : '#fef3c7',
-                              color: entry.source === 'epub' ? '#0369a1' : '#92400e',
+                              borderColor: entry.source === 'epub' ? COLORS.NEUTRAL : COLORS.PRIMARY,
+                              color: entry.source === 'epub' ? COLORS.SECONDARY : COLORS.PRIMARY,
                             }}
                           >
                             {entry.source}
@@ -309,13 +321,14 @@ function RubyRegistryContent() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleEdit(entry)}
-                            className="px-3 py-1 text-sm rounded hover:bg-gray-100"
+                            className="px-3 py-1 text-sm cursor-pointer interactive-link"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleDelete(entry.kanji)}
-                            className="px-3 py-1 text-sm rounded hover:bg-red-100 text-red-600"
+                            className="px-3 py-1 text-sm cursor-pointer interactive-link"
+                            style={{ color: COLORS.DANGER }}
                           >
                             Delete
                           </button>
@@ -329,10 +342,10 @@ function RubyRegistryContent() {
                 {registry.suggestions.length > 0 && !searchQuery && (
                   <>
                     <div className="mb-4">
-                      <h2 className="text-lg font-medium">
+                      <h2 className="font-mincho font-bold text-lg">
                         Suggestions ({registry.suggestions.length})
                       </h2>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm" style={{ color: COLORS.SECONDARY }}>
                         Frequent kanji compounds without readings - click to add
                       </p>
                     </div>
@@ -341,26 +354,27 @@ function RubyRegistryContent() {
                       {registry.suggestions.map((suggestion) => (
                         <div
                           key={suggestion.kanji}
-                          className="flex items-center justify-between p-3 rounded-lg border"
-                          style={{ borderColor: CSS_VARS.NEUTRAL, backgroundColor: '#fafafa' }}
+                          className="flex items-center justify-between p-3 border"
+                          style={{ borderColor: COLORS.NEUTRAL, backgroundColor: COLORS.BASE }}
                         >
                           <div className="flex items-center gap-4">
-                            <span className="text-xl">{suggestion.kanji}</span>
-                            <span className="text-sm text-gray-500">
+                            <span className="font-mincho text-xl">{suggestion.kanji}</span>
+                            <span className="text-sm" style={{ color: COLORS.SECONDARY }}>
                               ({suggestion.occurrences} occurrences)
                             </span>
                           </div>
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleAddSuggestion(suggestion.kanji)}
-                              className="px-3 py-1 text-sm rounded font-medium"
-                              style={{ backgroundColor: CSS_VARS.SECONDARY, color: 'white' }}
+                              className="px-3 py-1 text-sm font-bold border interactive-page-btn"
+                              style={{ borderColor: COLORS.INK }}
                             >
                               Add Reading
                             </button>
                             <button
                               onClick={() => handleIgnoreSuggestion(suggestion.kanji)}
-                              className="px-3 py-1 text-sm rounded hover:bg-gray-200"
+                              className="px-3 py-1 text-sm cursor-pointer interactive-link"
+                              style={{ color: COLORS.SECONDARY }}
                             >
                               Ignore
                             </button>
@@ -376,10 +390,11 @@ function RubyRegistryContent() {
         )}
 
         {/* Back Link */}
-        <div className="mt-8 pt-4 border-t" style={{ borderColor: CSS_VARS.NEUTRAL }}>
+        <div className="mt-8 pt-4 border-t" style={{ borderColor: COLORS.NEUTRAL }}>
           <Link
             href="/library"
-            className="text-gray-600 hover:underline"
+            className="text-sm hover:underline"
+            style={{ color: COLORS.SECONDARY }}
           >
             Back to Library
           </Link>

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { API_ROUTES, PAGE_ROUTES, CSS_VARS } from "@/lib/constants";
+import { API_ROUTES, PAGE_ROUTES, COLORS } from "@/lib/constants";
 
 export default function Home() {
     const [inputText, setInputText] = useState<string>("");
@@ -30,7 +30,7 @@ export default function Home() {
     return (
         <div>
             {isLoading ? (
-                <div className="flex justify-center m-30 h-screen text-5xl font-semibold">
+                <div className="flex justify-center m-30 h-screen font-mincho font-bold text-5xl" style={{ color: COLORS.INK }}>
                     処理中...
                 </div>
             ) : (
@@ -41,28 +41,31 @@ export default function Home() {
                             <textarea
                                 value={inputText}
                                 onChange={(e) => setInputText(e.target.value)}
-                                className="w-4xl h-64 m-1 rounded-lg border border-gray-300 focus:outline-none focus:ring-2"
+                                className="w-4xl h-64 m-1 p-3 border focus:outline-none focus:ring-2"
                                 style={{
-                                  backgroundColor: CSS_VARS.NEUTRAL,
-                                  '--tw-ring-color': CSS_VARS.SECONDARY,
+                                  backgroundColor: COLORS.SURFACE,
+                                  borderColor: COLORS.NEUTRAL,
+                                  color: COLORS.INK,
+                                  '--tw-ring-color': COLORS.PRIMARY,
                                 } as React.CSSProperties}
                             ></textarea>
                             <button
                                 type="submit"
-                                className="text-white font-bold py-2 px-4 rounded hover:cursor-pointer w-4xl transition-colors"
+                                className="min-h-11 px-5 text-sm font-bold hover:cursor-pointer w-4xl transition-colors"
                                 style={{
-                                  background: `linear-gradient(to bottom, ${CSS_VARS.SECONDARY}, ${CSS_VARS.SECONDARY_DARK})`,
+                                  backgroundColor: COLORS.PRIMARY,
+                                  color: COLORS.SURFACE,
                                 }}
                                 onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = CSS_VARS.SECONDARY_DARK;
+                                  e.currentTarget.style.backgroundColor = COLORS.PRIMARY_DARK;
                                 }}
                                 onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = `linear-gradient(to bottom, ${CSS_VARS.SECONDARY}, ${CSS_VARS.SECONDARY_DARK})`;
+                                  e.currentTarget.style.backgroundColor = COLORS.PRIMARY;
                                 }}
                             >
                                 保存
                             </button>
-                            <p>文字数: {inputText.length}</p>
+                            <p className="mt-2 text-sm" style={{ color: COLORS.SECONDARY }}>文字数: {inputText.length}</p>
                         </div>
                     </form>
                 </div>

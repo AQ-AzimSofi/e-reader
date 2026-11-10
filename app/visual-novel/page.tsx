@@ -5,7 +5,7 @@ import { useState, useCallback } from "react";
 import { parseMarkdown } from "@/lib/utils/markdownParser";
 import CollapsibleItem from "@/app/components/reading/CollapsibleItem";
 import { ai_instructions } from "@/lib/ai";
-import { VN_RETRY_CONFIG, AI_MODELS, API_ROUTES, CSS_VARS } from "@/lib/constants";
+import { VN_RETRY_CONFIG, AI_MODELS, API_ROUTES, COLORS } from "@/lib/constants";
 
 export default function Home() {
   const aiInstructions: string = ai_instructions;
@@ -102,7 +102,7 @@ export default function Home() {
   return (
     <div
       className="p-2 flex flex-col"
-      style={{ backgroundColor: CSS_VARS.BASE }}
+      style={{ backgroundColor: COLORS.BASE, color: COLORS.INK }}
     >
       <span
         style={{
@@ -118,34 +118,36 @@ export default function Home() {
       />
               <button
               onClick={handleFlushButtonClick}
-              className="text-white font-bold py-2 px-4 rounded hover:cursor-pointer transition-colors"
+              className="min-h-11 px-5 text-sm font-bold border hover:cursor-pointer transition-colors"
               style={{
-                background: `linear-gradient(to bottom, ${CSS_VARS.PRIMARY}, ${CSS_VARS.PRIMARY_DARK})`,
+                backgroundColor: 'transparent',
+                borderColor: COLORS.INK,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = CSS_VARS.PRIMARY_DARK;
+                e.currentTarget.style.backgroundColor = COLORS.NEUTRAL_SOFT;
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = `linear-gradient(to bottom, ${CSS_VARS.PRIMARY}, ${CSS_VARS.PRIMARY_DARK})`;
+                e.currentTarget.style.backgroundColor = 'transparent';
               }}
             >
               クリア
             </button>
       <button
         onClick={() => handleButtonClick()}
-        className={`text-white font-bold py-2 px-4 rounded hover:cursor-pointer transition-colors ${
+        className={`min-h-11 px-5 mt-2 text-sm font-bold hover:cursor-pointer transition-colors ${
           isLoading ? "opacity-50 cursor-not-allowed" : ""
         }`}
         style={{
-          background: `linear-gradient(to bottom, ${CSS_VARS.SECONDARY}, ${CSS_VARS.SECONDARY_DARK})`,
+          backgroundColor: COLORS.PRIMARY,
+          color: COLORS.SURFACE,
         }}
         onMouseEnter={(e) => {
           if (!isLoading) {
-            e.currentTarget.style.background = CSS_VARS.SECONDARY_DARK;
+            e.currentTarget.style.backgroundColor = COLORS.PRIMARY_DARK;
           }
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = `linear-gradient(to bottom, ${CSS_VARS.SECONDARY}, ${CSS_VARS.SECONDARY_DARK})`;
+          e.currentTarget.style.backgroundColor = COLORS.PRIMARY;
         }}
         disabled={isLoading}
       >

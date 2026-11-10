@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { COLORS } from '@/lib/constants';
 
 // Only load Swagger UI in development - will fail gracefully in production
 const SwaggerUI = dynamic(
@@ -11,7 +12,7 @@ const SwaggerUI = dynamic(
   }),
   {
     ssr: false,
-    loading: () => <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>
+    loading: () => <div className="text-sm" style={{ padding: '2rem', textAlign: 'center', color: COLORS.SECONDARY }}>Loading...</div>
   }
 );
 
@@ -35,17 +36,17 @@ export default function ApiDocsPage() {
 
   if (error) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h1>API Documentation</h1>
-        <p>{error}</p>
+      <div style={{ padding: '2rem', textAlign: 'center', color: COLORS.INK }}>
+        <h1 className="font-mincho font-bold text-2xl mb-2">API Documentation</h1>
+        <p className="text-sm" style={{ color: COLORS.SECONDARY }}>{error}</p>
       </div>
     );
   }
 
   if (!spec) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h1>Loading API Documentation...</h1>
+      <div style={{ padding: '2rem', textAlign: 'center', color: COLORS.INK }}>
+        <h1 className="font-mincho font-bold text-2xl">Loading API Documentation...</h1>
       </div>
     );
   }
