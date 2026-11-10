@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { CSS_VARS } from '@/lib/constants';
+import { COLORS } from '@/lib/constants';
+import { toTint } from '@/lib/utils/colorTint';
 import { bookAssetUrl } from '@/lib/utils/bookAssetPath';
 
 interface BookImageProps {
@@ -35,18 +36,15 @@ const BookImage: React.FC<BookImageProps> = ({
   return (
     <div className="my-4 flex flex-col items-center">
       <div
-        className="relative rounded-lg overflow-hidden border max-w-full"
+        className="relative overflow-hidden border max-w-full"
         style={{
-          borderColor: CSS_VARS.NEUTRAL,
-          backgroundColor: isLoading ? CSS_VARS.BASE : 'transparent',
+          borderColor: toTint(COLORS.SECONDARY, 35),
+          backgroundColor: isLoading ? toTint(COLORS.SECONDARY, 8) : 'transparent',
         }}
       >
         {isLoading && (
-          <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ backgroundColor: CSS_VARS.BASE }}
-          >
-            <p style={{ color: CSS_VARS.NEUTRAL }}>画像を読み込んでいます...</p>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p style={{ color: COLORS.SECONDARY }}>画像を読み込んでいます...</p>
           </div>
         )}
         <img
@@ -68,7 +66,7 @@ const BookImage: React.FC<BookImageProps> = ({
       {chapterName && !isLoading && (
         <p
           className="text-sm mt-2 text-center"
-          style={{ color: CSS_VARS.NEUTRAL }}
+          style={{ color: COLORS.SECONDARY }}
         >
           {chapterName}
         </p>

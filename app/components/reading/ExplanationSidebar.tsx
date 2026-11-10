@@ -2,9 +2,10 @@
 
 import * as React from 'react';
 import { marked } from 'marked';
-import { API_ROUTES, EXPLANATION_CONFIG, EXPLANATION_MODE_CONFIG } from '@/lib/constants';
+import { API_ROUTES, COLORS, EXPLANATION_CONFIG, EXPLANATION_MODE_CONFIG } from '@/lib/constants';
 import { useExplanationCache } from '@/app/hooks/useExplanationCache';
 import { parseFurigana, segmentsToHTML, stripFurigana } from '@/lib/utils/furiganaParser';
+import { toTint } from '@/lib/utils/colorTint';
 import { guestKeyHeaders, promptGuestKeyOnFailure, GUEST_KEY_UPDATED_EVENT } from '@/lib/guestKeys';
 import type { ExplanationRequest, ExplanationResponse } from '@/lib/types';
 import type { ExplanationMode } from '@/lib/constants';
@@ -208,23 +209,20 @@ export default function ExplanationSidebar({
       {isOpen && (
         <div
           className="fixed inset-0 z-40 transition-all duration-300"
-          style={{
-            backgroundColor: 'rgba(0, 0, 0, 0.15)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-          }}
+          style={{ backgroundColor: toTint(COLORS.INK, 20) }}
           onClick={onClose}
         />
       )}
 
       <div
-        className={`fixed top-0 right-0 h-full z-50 overflow-y-auto rounded-l-2xl ${
+        className={`fixed top-0 right-0 h-full z-50 overflow-y-auto font-gothic ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         style={{
           width: 'min(calc(100vw - 16px), 480px)',
-          backgroundColor: '#FFFFFF',
-          boxShadow: '-8px 0 32px rgba(0, 0, 0, 0.1)',
+          backgroundColor: COLORS.SURFACE,
+          color: COLORS.INK,
+          borderLeft: `1px solid ${COLORS.INK}`,
           transform: `translateX(${isOpen ? dragOffset : '100%'}px)`,
           transition: isDragging ? 'none' : 'transform 300ms cubic-bezier(0.32, 0.72, 0, 1)',
         }}
@@ -235,26 +233,29 @@ export default function ExplanationSidebar({
       >
         <div className="md:hidden flex justify-center pt-3 pb-1">
           <div
-            className="w-9 h-1 rounded-full"
-            style={{ backgroundColor: '#D1D1D6' }}
+            className="w-9 h-0.5"
+            style={{ backgroundColor: COLORS.NEUTRAL }}
           />
         </div>
 
         <div className="p-4 md:p-6">
-          <div className="flex items-start justify-between mb-5">
+          <div
+            className="flex items-start justify-between pb-4 mb-5"
+            style={{ borderBottom: `1px solid ${COLORS.NEUTRAL}` }}
+          >
             <div className="flex-1">
-              <h2 className="text-lg font-semibold" style={{ color: '#1D1D1F' }}>
+              <h2 className="text-lg font-mincho font-bold" style={{ color: COLORS.INK }}>
                 AI Explanation
               </h2>
               {isCached && cacheTimestamp && (
                 <div className="flex items-center gap-3 mt-1">
-                  <span className="text-xs" style={{ color: '#8E8E93' }}>
+                  <span className="text-xs" style={{ color: COLORS.SECONDARY }}>
                     Cached {getTimeAgo(cacheTimestamp)}
                   </span>
                   <button
                     onClick={() => setForceRegenerate(true)}
-                    className="text-xs font-medium interactive-link"
-                    style={{ color: '#007AFF' }}
+                    className="text-xs font-bold cursor-pointer interactive-link"
+                    style={{ color: COLORS.PRIMARY }}
                   >
                     Regenerate
                   </button>
@@ -263,8 +264,8 @@ export default function ExplanationSidebar({
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-full interactive-close"
-              style={{ backgroundColor: '#F2F2F7', color: '#8E8E93' }}
+              className="w-8 h-8 flex items-center justify-center cursor-pointer interactive-link"
+              style={{ color: COLORS.SECONDARY }}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -273,19 +274,19 @@ export default function ExplanationSidebar({
           </div>
 
           <div
-            className="rounded-xl p-4 mb-5"
+            className="p-4 mb-5"
             style={{
-              backgroundColor: 'rgba(0, 122, 255, 0.04)',
-              border: '1px solid rgba(0, 122, 255, 0.1)',
+              backgroundColor: COLORS.BASE,
+              border: `1px solid ${COLORS.NEUTRAL}`,
             }}
           >
             <div
-              className="text-xs font-medium uppercase tracking-wide mb-2"
-              style={{ color: '#007AFF' }}
+              className="text-xs font-bold uppercase tracking-wide mb-2"
+              style={{ color: COLORS.PRIMARY }}
             >
               Selected Sentence
             </div>
-            <p className="text-sm leading-relaxed" style={{ color: '#1D1D1F', whiteSpace: 'pre-wrap' }}>
+            <p className="font-mincho text-base leading-relaxed" style={{ color: COLORS.INK, whiteSpace: 'pre-wrap' }}>
               {renderTextWithFurigana(sentence)}
             </p>
           </div>
@@ -298,11 +299,11 @@ export default function ExplanationSidebar({
                   <button
                     key={modeKey}
                     onClick={() => setMode(modeKey as ExplanationMode)}
-                    className="px-3.5 py-1.5 rounded-full text-xs font-medium interactive-pill"
+                    className="px-3.5 py-1.5 text-xs font-bold cursor-pointer interactive-link"
                     style={{
-                      backgroundColor: isActive ? '#007AFF' : 'transparent',
-                      color: isActive ? '#FFFFFF' : '#636366',
-                      border: isActive ? 'none' : '1px solid rgba(0, 0, 0, 0.08)',
+                      backgroundColor: isActive ? COLORS.INK : 'transparent',
+                      color: isActive ? COLORS.SURFACE : COLORS.SECONDARY_DARK,
+                      border: `1px solid ${isActive ? COLORS.INK : COLORS.NEUTRAL}`,
                     }}
                     title={config.description}
                   >
@@ -315,8 +316,8 @@ export default function ExplanationSidebar({
             <div>
               <button
                 onClick={() => setContextSizeExpanded(!contextSizeExpanded)}
-                className="text-xs font-medium flex items-center gap-1 interactive-link"
-                style={{ color: '#8E8E93' }}
+                className="text-xs font-medium flex items-center gap-1 cursor-pointer interactive-link"
+                style={{ color: COLORS.SECONDARY }}
               >
                 Context: {contextSize} chars
                 <svg
@@ -344,10 +345,10 @@ export default function ExplanationSidebar({
                     onChange={(e) => setContextSize(parseInt(e.target.value, 10))}
                     className="w-full"
                     style={{
-                      background: `linear-gradient(to right, #007AFF 0%, #007AFF ${contextPercent}%, #E5E5EA ${contextPercent}%, #E5E5EA 100%)`,
+                      background: `linear-gradient(to right, ${COLORS.PRIMARY} 0%, ${COLORS.PRIMARY} ${contextPercent}%, ${COLORS.NEUTRAL} ${contextPercent}%, ${COLORS.NEUTRAL} 100%)`,
                     }}
                   />
-                  <div className="flex justify-between text-[10px] mt-1" style={{ color: '#8E8E93' }}>
+                  <div className="flex justify-between text-[10px] mt-1" style={{ color: COLORS.SECONDARY }}>
                     <span>{EXPLANATION_CONFIG.MIN_CONTEXT_SIZE}</span>
                     <span>{EXPLANATION_CONFIG.MAX_CONTEXT_SIZE}</span>
                   </div>
@@ -357,19 +358,19 @@ export default function ExplanationSidebar({
           </div>
 
           <div
-            className="rounded-xl p-4"
+            className="p-4"
             style={{
-              backgroundColor: '#FFFFFF',
-              border: '1px solid rgba(0, 0, 0, 0.06)',
+              backgroundColor: COLORS.SURFACE,
+              border: `1px solid ${COLORS.NEUTRAL}`,
             }}
           >
             {isLoading && (
               <div className="flex flex-col items-center justify-center py-10">
                 <div
                   className="animate-spin rounded-full h-8 w-8 border-2 border-transparent"
-                  style={{ borderTopColor: '#007AFF', borderRightColor: '#007AFF' }}
+                  style={{ borderTopColor: COLORS.PRIMARY, borderRightColor: COLORS.PRIMARY }}
                 />
-                <span className="mt-3 text-sm" style={{ color: '#8E8E93' }}>
+                <span className="mt-3 text-sm" style={{ color: COLORS.SECONDARY }}>
                   Generating explanation...
                 </span>
               </div>
@@ -377,14 +378,14 @@ export default function ExplanationSidebar({
 
             {error && !isLoading && (
               <div
-                className="rounded-xl p-4"
+                className="p-4"
                 style={{
-                  backgroundColor: 'rgba(255, 59, 48, 0.06)',
-                  border: '1px solid rgba(255, 59, 48, 0.15)',
-                  color: '#FF3B30',
+                  backgroundColor: toTint(COLORS.DANGER, 6),
+                  border: `1px solid ${COLORS.DANGER}`,
+                  color: COLORS.DANGER,
                 }}
               >
-                <p className="text-sm font-semibold mb-1">Error</p>
+                <p className="text-sm font-bold mb-1">Error</p>
                 <p className="text-sm">{error}</p>
               </div>
             )}
@@ -392,7 +393,7 @@ export default function ExplanationSidebar({
             {explanation && !isLoading && !error && (
               <div
                 className="text-sm leading-relaxed"
-                style={{ color: '#1D1D1F' }}
+                style={{ color: COLORS.INK }}
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(explanation) }}
               />
             )}

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { STORAGE_KEYS } from '@/lib/constants';
+import { COLORS, STORAGE_KEYS } from '@/lib/constants';
+import { toTint } from '@/lib/utils/colorTint';
 import { useRubyRegistry } from '@/app/hooks/useRubyRegistry';
 import type { RubyEntry } from '@/lib/types';
 import Link from 'next/link';
@@ -108,30 +109,30 @@ export default function RubyLookupSidebar({
     <>
       <div
         className="fixed inset-0 z-40 transition-all duration-300"
-        style={{
-          backgroundColor: 'rgba(0, 0, 0, 0.15)',
-          backdropFilter: 'blur(4px)',
-          WebkitBackdropFilter: 'blur(4px)',
-        }}
+        style={{ backgroundColor: toTint(COLORS.INK, 20) }}
         onClick={handleBackdropClick}
       />
 
       <div
-        className="fixed right-0 top-0 h-full w-[360px] max-w-[calc(100vw-16px)] z-50 overflow-hidden flex flex-col rounded-l-2xl"
+        className="fixed right-0 top-0 h-full w-[360px] max-w-[calc(100vw-16px)] z-50 overflow-hidden flex flex-col font-gothic"
         style={{
-          backgroundColor: '#FFFFFF',
-          boxShadow: '-8px 0 32px rgba(0, 0, 0, 0.1)',
+          backgroundColor: COLORS.SURFACE,
+          color: COLORS.INK,
+          borderLeft: `1px solid ${COLORS.INK}`,
           transition: 'transform 300ms cubic-bezier(0.32, 0.72, 0, 1)',
         }}
       >
-        <div className="flex items-center justify-between px-5 py-4">
-          <h2 className="font-semibold text-lg" style={{ color: '#1D1D1F' }}>
+        <div
+          className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: `1px solid ${COLORS.NEUTRAL}` }}
+        >
+          <h2 className="font-mincho font-bold text-lg" style={{ color: COLORS.INK }}>
             Word Lookup
           </h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full interactive-close"
-            style={{ backgroundColor: '#F2F2F7', color: '#8E8E93' }}
+            className="w-8 h-8 flex items-center justify-center cursor-pointer interactive-link"
+            style={{ color: COLORS.SECONDARY }}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -139,17 +140,17 @@ export default function RubyLookupSidebar({
           </button>
         </div>
 
-        <div className="px-5 pb-3">
+        <div className="px-5 pt-4 pb-3">
           <div className="flex gap-2">
             <div
-              className="flex-1 flex items-center gap-2 rounded-xl px-4 py-2.5"
-              style={{ backgroundColor: '#F2F2F7' }}
+              className="flex-1 flex items-center gap-2 px-4 py-2.5 focus-within:outline-2 focus-within:outline-[color:var(--color-primary)]"
+              style={{ backgroundColor: COLORS.SURFACE, border: `1px solid ${COLORS.NEUTRAL}` }}
             >
               <svg
                 className="w-4 h-4 flex-shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke="#8E8E93"
+                stroke={COLORS.SECONDARY}
                 strokeWidth={2}
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -161,15 +162,16 @@ export default function RubyLookupSidebar({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search kanji or reading..."
                 className="flex-1 bg-transparent text-sm focus:outline-none"
-                style={{ color: '#1D1D1F' }}
+                style={{ color: COLORS.INK }}
               />
             </div>
             <button
               onClick={() => setShowStarredOnly(!showStarredOnly)}
-              className="w-11 h-11 flex items-center justify-center rounded-xl interactive-pill"
+              className="w-11 h-11 flex items-center justify-center cursor-pointer interactive-link"
               style={{
-                backgroundColor: showStarredOnly ? '#007AFF' : '#F2F2F7',
-                color: showStarredOnly ? '#FFFFFF' : '#8E8E93',
+                backgroundColor: showStarredOnly ? COLORS.INK : 'transparent',
+                color: showStarredOnly ? COLORS.SURFACE : COLORS.SECONDARY,
+                border: `1px solid ${showStarredOnly ? COLORS.INK : COLORS.NEUTRAL}`,
               }}
               title={showStarredOnly ? 'Show all' : 'Show starred only'}
             >
@@ -179,7 +181,7 @@ export default function RubyLookupSidebar({
             </button>
           </div>
           {starredWords.size > 0 && (
-            <div className="mt-2 text-xs" style={{ color: '#8E8E93' }}>
+            <div className="mt-2 text-xs" style={{ color: COLORS.SECONDARY }}>
               {starredWords.size} starred word{starredWords.size !== 1 ? 's' : ''}
             </div>
           )}
@@ -190,24 +192,24 @@ export default function RubyLookupSidebar({
             <div className="flex flex-col items-center justify-center py-12">
               <div
                 className="animate-spin rounded-full h-7 w-7 border-2 border-transparent"
-                style={{ borderTopColor: '#007AFF', borderRightColor: '#007AFF' }}
+                style={{ borderTopColor: COLORS.PRIMARY, borderRightColor: COLORS.PRIMARY }}
               />
-              <span className="mt-3 text-sm" style={{ color: '#8E8E93' }}>Loading...</span>
+              <span className="mt-3 text-sm" style={{ color: COLORS.SECONDARY }}>Loading...</span>
             </div>
           ) : !registry || registry.entries.length === 0 ? (
             <div className="text-center py-12">
-              <p className="mb-4 text-sm" style={{ color: '#8E8E93' }}>No entries yet</p>
+              <p className="mb-4 text-sm" style={{ color: COLORS.SECONDARY }}>No entries yet</p>
               <Link
                 href={`/ruby-registry?directory=${encodeURIComponent(directory)}&bookName=${encodeURIComponent(bookName)}`}
-                className="text-sm font-medium interactive-link"
-                style={{ color: '#007AFF' }}
+                className="text-sm font-bold interactive-link"
+                style={{ color: COLORS.PRIMARY }}
               >
                 Set up registry
               </Link>
             </div>
           ) : sortedEntries.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-sm" style={{ color: '#8E8E93' }}>
+              <p className="text-sm" style={{ color: COLORS.SECONDARY }}>
                 {showStarredOnly
                   ? 'No starred words yet'
                   : `No matches for "${searchQuery}"`}
@@ -222,32 +224,32 @@ export default function RubyLookupSidebar({
                     key={entry.kanji}
                     className="flex items-center justify-between py-3"
                     style={{
-                      borderBottom: index < sortedEntries.length - 1 ? '1px solid rgba(0, 0, 0, 0.06)' : 'none',
+                      borderBottom: index < sortedEntries.length - 1 ? `1px solid ${COLORS.NEUTRAL}` : 'none',
                     }}
                   >
                     <div className="flex items-baseline gap-3 min-w-0">
-                      <span className="text-xl font-semibold" style={{ color: '#1D1D1F' }}>
+                      <span className="font-mincho text-xl font-bold" style={{ color: COLORS.INK }}>
                         {entry.kanji}
                       </span>
-                      <span className="text-lg" style={{ color: '#636366' }}>
+                      <span className="text-lg" style={{ color: COLORS.SECONDARY_DARK }}>
                         {entry.reading}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {entry.note && (
-                        <span className="text-sm truncate max-w-[100px]" style={{ color: '#8E8E93' }}>
+                        <span className="text-sm truncate max-w-[100px]" style={{ color: COLORS.SECONDARY }}>
                           {entry.note}
                         </span>
                       )}
                       <button
                         onClick={() => toggleStar(entry.kanji)}
-                        className="p-1 interactive-star"
+                        className="p-1 cursor-pointer interactive-link"
                         title={isStarred ? 'Unstar' : 'Star'}
                       >
                         <svg
                           className="w-5 h-5"
-                          fill={isStarred ? '#007AFF' : 'none'}
-                          stroke={isStarred ? '#007AFF' : '#D1D1D6'}
+                          fill={isStarred ? COLORS.PRIMARY : 'none'}
+                          stroke={isStarred ? COLORS.PRIMARY : COLORS.NEUTRAL}
                           viewBox="0 0 24 24"
                           strokeWidth={2}
                         >
@@ -268,16 +270,16 @@ export default function RubyLookupSidebar({
 
         <div
           className="px-5 py-3 flex items-center justify-between"
-          style={{ borderTop: '1px solid rgba(0, 0, 0, 0.06)' }}
+          style={{ borderTop: `1px solid ${COLORS.NEUTRAL}` }}
         >
           <Link
             href={`/ruby-registry?directory=${encodeURIComponent(directory)}&bookName=${encodeURIComponent(bookName)}`}
-            className="text-sm font-medium interactive-link"
-            style={{ color: '#007AFF' }}
+            className="text-sm font-bold interactive-link"
+            style={{ color: COLORS.PRIMARY }}
           >
             Edit Registry
           </Link>
-          <span className="text-xs" style={{ color: '#8E8E93' }}>
+          <span className="text-xs" style={{ color: COLORS.SECONDARY }}>
             Esc to close
           </span>
         </div>

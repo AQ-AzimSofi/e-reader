@@ -2,7 +2,8 @@
 
 import { useTTS } from '@/app/hooks/useTTS';
 import SpeakerIcon from '@/app/components/icons/SpeakerIcon';
-import { CSS_VARS } from '@/lib/constants';
+import { COLORS } from '@/lib/constants';
+import { toTint } from '@/lib/utils/colorTint';
 import { useRef, useCallback } from 'react';
 
 interface TTSButtonProps {
@@ -96,17 +97,13 @@ export default function TTSButton({ text, className = '', size = 'sm', onLongPre
       className={`
         ${sizeClasses}
         flex items-center justify-center
-        rounded-full
-        transition-all duration-200
-        hover:scale-110
+        transition-colors duration-200
         ${isLoading ? 'opacity-50 cursor-wait' : 'cursor-pointer'}
         ${className}
       `}
       style={{
-        backgroundColor: isPlaying
-          ? `color-mix(in srgb, ${CSS_VARS.PRIMARY} 20%, transparent)`
-          : 'transparent',
-        boxShadow: isPlaying ? `0 0 0 2px ${CSS_VARS.PRIMARY}` : 'none',
+        backgroundColor: isPlaying ? toTint(COLORS.PRIMARY, 12) : 'transparent',
+        borderBottom: `2px solid ${isPlaying ? COLORS.PRIMARY : 'transparent'}`,
       }}
       title={
         isLoading

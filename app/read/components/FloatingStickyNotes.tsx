@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { READER_THEME, COLORS, STORAGE_KEYS } from '@/lib/constants';
+import { toTint } from '@/lib/utils/colorTint';
 import { useRubyRegistry } from '@/app/hooks/useRubyRegistry';
 
 interface FloatingStickyNotesProps {
@@ -237,6 +238,7 @@ export default function FloatingStickyNotes({
 
   return (
     <div
+      className="font-gothic"
       style={{
         position: 'fixed',
         left: `${position.x}px`,
@@ -256,19 +258,13 @@ export default function FloatingStickyNotes({
           style={{
             width: `${COLLAPSED_SIZE}px`,
             height: `${COLLAPSED_SIZE}px`,
-            borderRadius: '50%',
             backgroundColor: COLORS.PRIMARY,
-            color: '#FFFFFF',
+            color: COLORS.SURFACE,
             border: 'none',
-            boxShadow: isDragging
-              ? '0 8px 32px rgba(0, 0, 0, 0.35)'
-              : '0 4px 20px rgba(0, 0, 0, 0.25)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: isDragging ? 'grabbing' : 'grab',
-            transition: isDragging ? 'none' : 'box-shadow 200ms, transform 200ms',
-            transform: isDragging ? 'scale(1.08)' : 'scale(1)',
           }}
         >
           <svg
@@ -280,12 +276,12 @@ export default function FloatingStickyNotes({
           </svg>
           {starredEntries.length > 0 && (
             <span
-              className="absolute -top-1 -right-1 text-xs font-bold rounded-full flex items-center justify-center"
+              className="absolute -top-1 -right-1 text-xs font-bold flex items-center justify-center"
               style={{
                 width: 20,
                 height: 20,
-                backgroundColor: COLORS.SECONDARY,
-                color: '#FFFFFF',
+                backgroundColor: COLORS.INK,
+                color: COLORS.SURFACE,
               }}
             >
               {starredEntries.length}
@@ -294,15 +290,12 @@ export default function FloatingStickyNotes({
         </button>
       ) : (
         <div
-          className="rounded-xl overflow-hidden"
+          className="overflow-hidden"
           style={{
             width: `${PANEL_WIDTH}px`,
             maxHeight: `${MAX_HEIGHT}px`,
             backgroundColor: READER_THEME.SURFACE,
-            boxShadow: isDragging
-              ? '0 8px 32px rgba(0, 0, 0, 0.35)'
-              : '0 4px 20px rgba(0, 0, 0, 0.25)',
-            border: `1px solid ${COLORS.NEUTRAL}`,
+            border: `1px solid ${COLORS.INK}`,
             display: 'flex',
             flexDirection: 'column',
           }}
@@ -327,14 +320,14 @@ export default function FloatingStickyNotes({
               >
                 <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
               </svg>
-              <span className="font-medium text-sm" style={{ color: COLORS.PRIMARY_DARK }}>
+              <span className="font-mincho font-bold text-sm" style={{ color: COLORS.INK }}>
                 Starred ({starredEntries.length})
               </span>
             </div>
             <button
               onClick={handleToggle}
-              className="p-1 rounded hover:bg-gray-100 transition-colors"
-              style={{ color: COLORS.PRIMARY_DARK }}
+              className="p-1 cursor-pointer interactive-link"
+              style={{ color: COLORS.SECONDARY }}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -347,27 +340,30 @@ export default function FloatingStickyNotes({
             style={{ maxHeight: MAX_HEIGHT - 52 }}
           >
             {starredEntries.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">
+              <p className="text-sm text-center py-4" style={{ color: COLORS.SECONDARY }}>
                 No starred words
               </p>
             ) : (
               starredEntries.map(entry => (
                 <div
                   key={entry.kanji}
-                  className="p-2 rounded-lg bg-white border"
-                  style={{ borderColor: COLORS.NEUTRAL }}
+                  className="p-2 border"
+                  style={{
+                    backgroundColor: toTint(COLORS.PRIMARY, 6),
+                    borderColor: COLORS.NEUTRAL,
+                    color: COLORS.INK,
+                  }}
                 >
                   <div className="flex items-baseline gap-2">
-                    <span
-                      className="text-lg font-medium"
-                      style={{ color: COLORS.PRIMARY }}
-                    >
+                    <span className="font-mincho text-lg font-bold">
                       {entry.kanji}
                     </span>
-                    <span className="text-base">{entry.reading}</span>
+                    <span className="text-base" style={{ color: COLORS.SECONDARY_DARK }}>
+                      {entry.reading}
+                    </span>
                   </div>
                   {entry.note && (
-                    <p className="text-xs text-gray-500 mt-1">{entry.note}</p>
+                    <p className="text-xs mt-1" style={{ color: COLORS.SECONDARY }}>{entry.note}</p>
                   )}
                 </div>
               ))
