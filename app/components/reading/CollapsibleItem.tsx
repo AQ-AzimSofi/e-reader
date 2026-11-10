@@ -10,6 +10,7 @@ import TTSButton from "@/app/components/reading/TTSButton";
 import { useSearchParams } from "next/navigation";
 import { COLORS, EXPLANATION_CONFIG, DARK_COLORS } from "@/lib/constants";
 import { parseFurigana, segmentsToHTML } from "@/lib/utils/furiganaParser";
+import { toTint } from "@/lib/utils/colorTint";
 import { bookImagePath } from "@/lib/utils/bookAssetPath";
 import { guestKeyHeaders, promptGuestKeyOnFailure } from "@/lib/guestKeys";
 
@@ -113,6 +114,9 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
       return () => clearTimeout(timer);
     }
   }, [highlightWord, head]);
+
+  const accentColor = isDarkMode ? DARK_COLORS.PRIMARY : COLORS.PRIMARY;
+  const mutedTextColor = isDarkMode ? DARK_COLORS.TEXT_MUTED : COLORS.SECONDARY_DARK;
 
   const toggleOpen = () => {
     setIsOpen(!isOpen);
@@ -336,7 +340,7 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
               }}
               className={
                 onSentenceClick && !vocabularyMode
-                  ? "cursor-pointer transition-colors rounded-md px-1"
+                  ? "cursor-pointer transition-colors px-1"
                   : ""
               }
               style={
@@ -349,8 +353,7 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
               }
               onMouseEnter={(e) => {
                 if (onSentenceClick && !vocabularyMode) {
-                  e.currentTarget.style.backgroundColor =
-                    "rgba(0, 122, 255, 0.06)";
+                  e.currentTarget.style.backgroundColor = toTint(accentColor, 10);
                 }
               }}
               onMouseLeave={(e) => {
@@ -412,7 +415,7 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
   const renderHeadWithImages = () => {
     if (showTranslation && translatedText) {
       return (
-        <span style={{ color: isDarkMode ? "#E5E5EA" : "#636366" }}>
+        <span style={{ color: mutedTextColor }}>
           {translatedText}
         </span>
       );
@@ -454,28 +457,24 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
 
   const containerStyle: React.CSSProperties = isPlaying
     ? {
-        borderLeft: `4px solid ${COLORS.PLAYING}`,
-        backgroundColor: "rgba(52, 199, 89, 0.08)",
+        borderLeft: `2px solid ${COLORS.PLAYING}`,
+        backgroundColor: toTint(COLORS.PLAYING, 10),
       }
     : shouldHighlight
     ? {
-        backgroundColor: isDarkMode
-          ? "rgba(10, 132, 255, 0.08)"
-          : "rgba(0, 122, 255, 0.06)",
+        backgroundColor: toTint(accentColor, 10),
         borderLeft: "none",
         transition: "background-color 3s ease, border-left 3s ease",
       }
     : isStartCursor
       ? {
-          borderLeft: `4px solid ${COLORS.START_CURSOR}`,
-          backgroundColor: "rgba(255, 149, 0, 0.06)",
+          borderLeft: `2px solid ${COLORS.START_CURSOR}`,
+          backgroundColor: toTint(COLORS.START_CURSOR, 7),
         }
       : isBookmarked
         ? {
-            borderLeft: `4px solid ${isDarkMode ? DARK_COLORS.PRIMARY : "#007AFF"}`,
-            backgroundColor: isDarkMode
-              ? "rgba(10, 132, 255, 0.06)"
-              : "rgba(0, 122, 255, 0.03)",
+            borderLeft: `2px solid ${accentColor}`,
+            backgroundColor: toTint(accentColor, 7),
           }
         : {};
 
@@ -485,7 +484,7 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: "8px",
+    borderRadius: "2px",
     border: "none",
     background: "none",
     cursor: "pointer",
@@ -494,8 +493,8 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
   };
 
   const hoverBg = isDarkMode
-    ? "rgba(255, 255, 255, 0.06)"
-    : "rgba(0, 0, 0, 0.04)";
+    ? toTint(DARK_COLORS.TEXT, 6)
+    : toTint(COLORS.INK, 4);
 
   // A line whose original is only illustrations, none of which exist, would be an empty card.
   const headParts = hasImage ? parseContentWithImages(head) : [];
@@ -511,7 +510,7 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
   return (
     <div className="collapsibleItem" id={id} data-global-index={globalIndex} style={{ scrollMarginTop: '80px' }}>
       <div
-        className="p-4 my-4 rounded-xl"
+        className="p-4 my-4"
         style={{
           transition: "background-color 3s ease, border-left 0.2s ease",
           ...containerStyle,
@@ -525,7 +524,7 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
               onMouseUp={handleTextSelection}
               onClickCapture={handleTripleClickSelect}
               style={{
-                color: isDarkMode ? DARK_COLORS.TEXT : "#1D1D1F",
+                color: isDarkMode ? DARK_COLORS.TEXT : COLORS.INK,
                 ...(vocabularyMode || !aiExplanationEnabled
                   ? { userSelect: "text" as const, cursor: "text" }
                   : {}),
@@ -620,12 +619,12 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = hoverBg;
                   const svg = e.currentTarget.querySelector("svg");
-                  if (svg) svg.style.fill = "#8E8E93";
+                  if (svg) svg.style.fill = mutedTextColor;
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = "transparent";
                   const svg = e.currentTarget.querySelector("svg");
-                  if (svg) svg.style.fill = "#D1D1D6";
+                  if (svg) svg.style.fill = COLORS.SECONDARY;
                 }}
                 onMouseDown={(e) => {
                   e.currentTarget.style.transform = "scale(0.9)";
@@ -641,7 +640,7 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
                   width="16"
                   height="16"
                   style={{
-                    fill: "#D1D1D6",
+                    fill: COLORS.SECONDARY,
                     transition: "transform 200ms ease, fill 200ms ease",
                     transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
                   }}
@@ -653,31 +652,25 @@ const CollapsibleItem: React.FC<CollapsibleItemProps> = ({
           </div>
         </div>
         {isOpen && (
-          <div className="mt-3">
-            {subItems.map((subItem, index) => (
-              <div
-                key={index}
-                className="sub-item-text rounded-xl mb-2"
-                onClick={handleTripleClickSelect}
-                style={
-                  isDarkMode
-                    ? {
-                        color: "#E5E5EA",
-                        backgroundColor: "#2C2C2E",
-                        border: `1px solid ${DARK_COLORS.NEUTRAL}`,
-                        padding: "12px 16px",
-                      }
-                    : {
-                        color: "#636366",
-                        backgroundColor: "rgba(0, 122, 255, 0.03)",
-                        border: "1px solid rgba(0, 122, 255, 0.06)",
-                        padding: "12px 16px",
-                      }
-                }
-              >
-                {index === 4 ? "" : renderTextWithFurigana(subItem, false)}
-              </div>
-            ))}
+          <div className="mt-2 flex items-baseline gap-3.5">
+            <span
+              className="flex-shrink-0 font-gothic text-[11px] font-bold tracking-[0.14em]"
+              style={{ color: accentColor }}
+            >
+              やさしく
+            </span>
+            <div className="flex-1 min-w-0 flex flex-col gap-2">
+              {subItems.map((subItem, index) => (
+                <div
+                  key={index}
+                  className="sub-item-text"
+                  onClick={handleTripleClickSelect}
+                  style={{ color: mutedTextColor }}
+                >
+                  {index === 4 ? "" : renderTextWithFurigana(subItem, false)}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
