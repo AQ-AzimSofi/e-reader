@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { API_ROUTES } from '@/lib/constants';
+import { API_ROUTES, COLORS } from '@/lib/constants';
+import { toTint } from '@/lib/utils/colorTint';
 
 interface DiffResult {
   table: string;
@@ -81,19 +82,19 @@ export default function DbSyncModal({ onClose }: { onClose: () => void }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+      style={{ backgroundColor: toTint(COLORS.INK, 40) }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-2xl"
-        style={{ backgroundColor: '#FFFFFF' }}
+        className="w-full max-w-2xl max-h-[80vh] overflow-y-auto border"
+        style={{ backgroundColor: COLORS.SURFACE, borderColor: COLORS.INK, color: COLORS.INK }}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E5EA' }}>
-          <h2 className="text-lg font-semibold" style={{ color: '#1D1D1F' }}>Database Sync</h2>
+        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b" style={{ backgroundColor: COLORS.SURFACE, borderColor: COLORS.NEUTRAL }}>
+          <h2 className="font-mincho font-bold text-lg tracking-[0.04em]" style={{ color: COLORS.INK }}>Database Sync</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-black/5"
-            style={{ color: '#8E8E93' }}
+            className="p-1.5 interactive-close"
+            style={{ color: COLORS.SECONDARY }}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -104,13 +105,13 @@ export default function DbSyncModal({ onClose }: { onClose: () => void }) {
         <div className="p-6 space-y-5">
           {!diffs && !loading && !error && (
             <div className="text-center py-8">
-              <p className="text-sm mb-4" style={{ color: '#8E8E93' }}>
+              <p className="text-sm mb-4" style={{ color: COLORS.SECONDARY }}>
                 Compare local and production databases
               </p>
               <button
                 onClick={fetchStatus}
-                className="px-5 py-2.5 rounded-xl text-sm font-medium text-white"
-                style={{ backgroundColor: '#007AFF' }}
+                className="min-h-11 px-5 text-sm font-bold interactive-btn"
+                style={{ backgroundColor: COLORS.PRIMARY, color: COLORS.SURFACE }}
               >
                 Check Status
               </button>
@@ -121,15 +122,15 @@ export default function DbSyncModal({ onClose }: { onClose: () => void }) {
             <div className="flex items-center justify-center py-8">
               <div
                 className="w-6 h-6 border-2 rounded-full animate-spin mr-3"
-                style={{ borderColor: '#E5E5EA', borderTopColor: '#007AFF' }}
+                style={{ borderColor: COLORS.NEUTRAL, borderTopColor: COLORS.INK }}
               />
-              <span className="text-sm" style={{ color: '#8E8E93' }}>Connecting to databases...</span>
+              <span className="text-sm" style={{ color: COLORS.SECONDARY }}>Connecting to databases...</span>
             </div>
           )}
 
           {error && (
-            <div className="p-4 rounded-xl" style={{ backgroundColor: '#FFF2F2' }}>
-              <p className="text-sm font-medium" style={{ color: '#FF3B30' }}>{error}</p>
+            <div className="p-4 border" style={{ backgroundColor: toTint(COLORS.DANGER, 8), borderColor: COLORS.DANGER }}>
+              <p className="text-sm font-bold" style={{ color: COLORS.DANGER }}>{error}</p>
             </div>
           )}
 
@@ -138,11 +139,11 @@ export default function DbSyncModal({ onClose }: { onClose: () => void }) {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr style={{ color: '#8E8E93' }}>
-                      <th className="text-left py-2 px-3 font-medium">Table</th>
-                      <th className="text-right py-2 px-3 font-medium">Local</th>
-                      <th className="text-right py-2 px-3 font-medium">Prod</th>
-                      <th className="text-left py-2 px-3 font-medium">Status</th>
+                    <tr className="text-xs" style={{ color: COLORS.SECONDARY }}>
+                      <th className="text-left py-2 px-3 font-bold">Table</th>
+                      <th className="text-right py-2 px-3 font-bold">Local</th>
+                      <th className="text-right py-2 px-3 font-bold">Prod</th>
+                      <th className="text-left py-2 px-3 font-bold">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -153,35 +154,35 @@ export default function DbSyncModal({ onClose }: { onClose: () => void }) {
                       const inSync = toPush === 0 && toPull === 0
                         && countsKnown && d.localCount === d.prodCount;
                       let status = 'In sync';
-                      let statusColor = '#34C759';
+                      let statusColor: string = COLORS.SUCCESS;
                       if (!countsKnown) {
                         status = 'Count unavailable';
-                        statusColor = '#FF9500';
+                        statusColor = COLORS.DANGER;
                       } else if (toPush > 0 && toPull > 0) {
                         status = `${toPush} to push, ${toPull} to pull`;
-                        statusColor = '#FF9500';
+                        statusColor = COLORS.DANGER;
                       } else if (toPush > 0) {
                         status = `${toPush} to push`;
-                        statusColor = '#007AFF';
+                        statusColor = COLORS.PRIMARY;
                       } else if (toPull > 0) {
                         status = `${toPull} to pull`;
-                        statusColor = '#AF52DE';
+                        statusColor = COLORS.INK;
                       } else if (d.localCount !== d.prodCount) {
                         status = 'Counts differ';
-                        statusColor = '#FF9500';
+                        statusColor = COLORS.DANGER;
                       }
                       return (
-                        <tr key={d.table} className="border-t" style={{ borderColor: '#F2F2F7' }}>
-                          <td className="py-2.5 px-3 font-mono text-xs" style={{ color: '#1D1D1F' }}>{d.table}</td>
-                          <td className="py-2.5 px-3 text-right tabular-nums" style={{ color: '#1D1D1F' }}>
+                        <tr key={d.table} className="border-t" style={{ borderColor: COLORS.NEUTRAL }}>
+                          <td className="py-2.5 px-3 font-mono text-xs" style={{ color: COLORS.INK }}>{d.table}</td>
+                          <td className="py-2.5 px-3 text-right tabular-nums" style={{ color: COLORS.INK }}>
                             {d.localCount === null ? 'N/A' : d.localCount}
                           </td>
-                          <td className="py-2.5 px-3 text-right tabular-nums" style={{ color: '#1D1D1F' }}>
+                          <td className="py-2.5 px-3 text-right tabular-nums" style={{ color: COLORS.INK }}>
                             {d.prodCount === null ? 'N/A' : d.prodCount}
                           </td>
                           <td className="py-2.5 px-3">
                             <span
-                              className="inline-flex items-center gap-1 text-xs font-medium"
+                              className="inline-flex items-center gap-1 text-xs font-bold"
                               style={{ color: statusColor }}
                             >
                               {inSync && (
@@ -200,10 +201,10 @@ export default function DbSyncModal({ onClose }: { onClose: () => void }) {
               </div>
 
               {syncResults && (
-                <div className="p-4 rounded-xl" style={{ backgroundColor: '#F0FFF4' }}>
-                  <p className="text-sm font-medium mb-2" style={{ color: '#34C759' }}>Sync completed</p>
+                <div className="p-4 border" style={{ backgroundColor: toTint(COLORS.SUCCESS, 8), borderColor: COLORS.SUCCESS }}>
+                  <p className="text-sm font-bold mb-2" style={{ color: COLORS.SUCCESS }}>Sync completed</p>
                   {syncResults.map((r, i) => (
-                    <p key={i} className="text-xs" style={{ color: '#1D1D1F' }}>
+                    <p key={i} className="text-xs" style={{ color: COLORS.INK }}>
                       {r.table}: {r.rows} rows ({r.direction}){r.skipped > 0 ? `, ${r.skipped} skipped` : ''}{r.failed > 0 ? `, ${r.failed} failed` : ''}
                     </p>
                   ))}
@@ -214,17 +215,19 @@ export default function DbSyncModal({ onClose }: { onClose: () => void }) {
                 <button
                   onClick={fetchStatus}
                   disabled={syncing}
-                  className="px-4 py-2 rounded-xl text-sm font-medium"
-                  style={{ backgroundColor: '#F2F2F7', color: '#1D1D1F', opacity: syncing ? 0.5 : 1 }}
+                  className="min-h-11 px-5 text-sm font-bold border"
+                  style={{ backgroundColor: 'transparent', borderColor: COLORS.NEUTRAL, color: COLORS.INK, opacity: syncing ? 0.5 : 1 }}
                 >
                   Refresh
                 </button>
                 <button
                   onClick={() => runSync('pull')}
                   disabled={syncing || !hasProdToPull}
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-white"
+                  className="min-h-11 px-5 text-sm font-bold border"
                   style={{
-                    backgroundColor: '#AF52DE',
+                    backgroundColor: 'transparent',
+                    borderColor: COLORS.INK,
+                    color: COLORS.INK,
                     opacity: syncing || !hasProdToPull ? 0.4 : 1,
                   }}
                 >
@@ -233,9 +236,10 @@ export default function DbSyncModal({ onClose }: { onClose: () => void }) {
                 <button
                   onClick={() => runSync('push')}
                   disabled={syncing || !hasLocalToPush}
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-white"
+                  className="min-h-11 px-5 text-sm font-bold"
                   style={{
-                    backgroundColor: '#007AFF',
+                    backgroundColor: COLORS.PRIMARY,
+                    color: COLORS.SURFACE,
                     opacity: syncing || !hasLocalToPush ? 0.4 : 1,
                   }}
                 >
@@ -244,9 +248,10 @@ export default function DbSyncModal({ onClose }: { onClose: () => void }) {
                 <button
                   onClick={() => runSync('full')}
                   disabled={syncing || allInSync}
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-white"
+                  className="min-h-11 px-5 text-sm font-bold"
                   style={{
-                    backgroundColor: '#FF9500',
+                    backgroundColor: COLORS.INK,
+                    color: COLORS.SURFACE,
                     opacity: syncing || allInSync ? 0.4 : 1,
                   }}
                 >
@@ -255,7 +260,7 @@ export default function DbSyncModal({ onClose }: { onClose: () => void }) {
               </div>
 
               {allInSync && (
-                <p className="text-sm text-center" style={{ color: '#34C759' }}>
+                <p className="text-sm text-center" style={{ color: COLORS.SUCCESS }}>
                   All tables are in sync.
                 </p>
               )}

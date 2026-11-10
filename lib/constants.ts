@@ -251,16 +251,21 @@ export const TTS_CONFIG = {
 
 export type TTSVoiceGender = 'FEMALE' | 'MALE';
 
-// カラーパレット (Apple Design Language)
+// カラーパレット (Bunko: paper, ink, and one indigo accent)
 export const COLORS = {
-  BASE: '#F2F2F7',
-  NEUTRAL: '#D1D1D6',
-  PRIMARY: '#007AFF',
-  PRIMARY_DARK: '#0051D5',
-  SECONDARY: '#8E8E93',
-  SECONDARY_DARK: '#636366',
-  START_CURSOR: '#FF9500',
-  PLAYING: '#34C759',
+  BASE: '#F6F7F9',
+  SURFACE: '#FFFFFF',
+  INK: '#15171C',
+  NEUTRAL: '#D5D8DE',
+  NEUTRAL_SOFT: '#EEF0F3',
+  PRIMARY: '#2F4BA0',
+  PRIMARY_DARK: '#243B80',
+  SECONDARY: '#5B6270',
+  SECONDARY_DARK: '#3A3F4A',
+  START_CURSOR: '#B3311D',
+  PLAYING: '#1F6F5C',
+  DANGER: '#B3311D',
+  SUCCESS: '#1F6F5C',
 } as const;
 
 // CSS変数（インラインスタイルで使用）
@@ -275,23 +280,24 @@ export const CSS_VARS = {
 
 // Dark mode color palette
 export const DARK_COLORS = {
-  BASE: '#000000',
-  SURFACE: '#1C1C1E',
-  NEUTRAL: '#38383A',
-  PRIMARY: '#0A84FF',
-  PRIMARY_MUTED: '#0A84FF80',
+  BASE: '#15171C',
+  SURFACE: '#1E2128',
+  NEUTRAL: '#343943',
+  PRIMARY: '#9DB0EC',
+  PRIMARY_MUTED: '#9DB0EC80',
   SECONDARY: '#48484A',
-  TEXT: '#F2F2F7',
+  TEXT: '#ECEAE4',
+  TEXT_MUTED: '#A3AAB8',
 };
 
 // Minimal Reader Theme
 export const READER_THEME = {
   SURFACE: '#FFFFFF',
-  SURFACE_MUTED: '#F2F2F7',
-  FAB_BG: '#007AFF',
+  SURFACE_MUTED: '#F6F7F9',
+  FAB_BG: '#2F4BA0',
   FAB_ICON: '#FFFFFF',
-  PROGRESS_TRACK: '#E5E5EA',
-  PROGRESS_FILL: '#007AFF',
+  PROGRESS_TRACK: '#EEF0F3',
+  PROGRESS_FILL: '#2F4BA0',
   TRANSITION_FAST: '150ms',
   TRANSITION_NORMAL: '300ms',
 } as const;

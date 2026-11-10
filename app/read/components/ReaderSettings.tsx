@@ -17,7 +17,7 @@ interface ReaderSettingsProps {
 
 function sliderGradient(value: number, min: number, max: number): string {
   const percent = ((value - min) / (max - min)) * 100;
-  return `linear-gradient(to right, #007AFF 0%, #007AFF ${percent}%, #E5E5EA ${percent}%, #E5E5EA 100%)`;
+  return `linear-gradient(to right, var(--range-fill) 0%, var(--range-fill) ${percent}%, var(--range-track) ${percent}%, var(--range-track) 100%)`;
 }
 
 export default function ReaderSettings({
@@ -35,9 +35,9 @@ export default function ReaderSettings({
   return (
     <div className="space-y-6">
       <div>
-        <label className="settings-label">Font Size</label>
+        <label className="settings-label font-bold">Font Size</label>
         <div className="flex items-center gap-4 mt-3">
-          <span style={{ fontSize: '14px', color: '#8E8E93' }}>A</span>
+          <span className="settings-sublabel" style={{ fontSize: '14px' }}>A</span>
           <input
             type="range"
             min={READER_CONFIG.MIN_FONT_SIZE}
@@ -49,14 +49,14 @@ export default function ReaderSettings({
               background: sliderGradient(fontSize, READER_CONFIG.MIN_FONT_SIZE, READER_CONFIG.MAX_FONT_SIZE),
             }}
           />
-          <span style={{ fontSize: '20px', color: '#8E8E93' }}>A</span>
+          <span className="settings-sublabel" style={{ fontSize: '20px' }}>A</span>
         </div>
       </div>
 
       <div>
-        <label className="settings-label">Line Height</label>
+        <label className="settings-label font-bold">Line Height</label>
         <div className="flex items-center gap-4 mt-3">
-          <span style={{ fontSize: '12px', color: '#8E8E93' }}>Compact</span>
+          <span className="settings-sublabel">Compact</span>
           <input
             type="range"
             min={READER_CONFIG.MIN_LINE_HEIGHT * 10}
@@ -72,12 +72,12 @@ export default function ReaderSettings({
               ),
             }}
           />
-          <span style={{ fontSize: '12px', color: '#8E8E93' }}>Spacious</span>
+          <span className="settings-sublabel">Spacious</span>
         </div>
       </div>
 
       <div>
-        <label className="settings-label mb-3 block">Display Mode</label>
+        <label className="settings-label font-bold mb-3 block">Display Mode</label>
         <div className="segmented-control">
           <button
             className={displayMode === 'collapsed' ? 'active' : ''}

@@ -55,6 +55,8 @@ const GuestApiKeyModal = dynamic(
   { ssr: false }
 );
 
+const PRIORITIZE_ERROR_MESSAGE = 'このページを分析できませんでした。もう一度お試しください。';
+
 function SearchParamsReader({
   children,
 }: {
@@ -158,7 +160,7 @@ function ReaderContent({
   }, []);
 
   useEffect(() => {
-    document.body.style.backgroundColor = isDarkMode ? DARK_COLORS.BASE : '';
+    document.body.style.backgroundColor = isDarkMode ? DARK_COLORS.BASE : READER_THEME.SURFACE;
     return () => {
       document.body.style.backgroundColor = '';
     };
@@ -269,7 +271,7 @@ function ReaderContent({
         if (res.status === 401) {
           await promptGuestKeyOnFailure('gemini', res);
         } else {
-          setPrioritizeError('Could not analyze this page. Please try again.');
+          setPrioritizeError(PRIORITIZE_ERROR_MESSAGE);
         }
         return;
       }
@@ -280,7 +282,7 @@ function ReaderContent({
         Object.fromEntries(scores.map((score, index) => [start + index, score] as const))
       );
     } catch {
-      setPrioritizeError('Could not analyze this page. Please try again.');
+      setPrioritizeError(PRIORITIZE_ERROR_MESSAGE);
     } finally {
       setIsPrioritizing(false);
     }
@@ -593,25 +595,17 @@ function ReaderContent({
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: isDarkMode ? DARK_COLORS.BASE : READER_THEME.SURFACE_MUTED }}
+        style={{ backgroundColor: isDarkMode ? DARK_COLORS.BASE : READER_THEME.SURFACE }}
       >
         <div
-          className="p-8 rounded-2xl"
+          className="w-10 h-10 rounded-full animate-spin"
           style={{
-            backgroundColor: isDarkMode ? DARK_COLORS.SURFACE : READER_THEME.SURFACE,
-            boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
+            borderWidth: '2px',
+            borderStyle: 'solid',
+            borderColor: isDarkMode ? DARK_COLORS.NEUTRAL : COLORS.NEUTRAL,
+            borderTopColor: isDarkMode ? DARK_COLORS.TEXT : COLORS.INK,
           }}
-        >
-          <div
-            className="w-10 h-10 rounded-full animate-spin"
-            style={{
-              borderWidth: '3px',
-              borderStyle: 'solid',
-              borderColor: isDarkMode ? DARK_COLORS.NEUTRAL : '#E5E5EA',
-              borderTopColor: '#007AFF',
-            }}
-          />
-        </div>
+        />
       </div>
     );
   }
@@ -620,27 +614,27 @@ function ReaderContent({
     return (
       <div
         className="min-h-screen flex items-center justify-center p-4"
-        style={{ backgroundColor: isDarkMode ? DARK_COLORS.BASE : READER_THEME.SURFACE_MUTED }}
+        style={{ backgroundColor: isDarkMode ? DARK_COLORS.BASE : READER_THEME.SURFACE }}
       >
         <div
-          className="p-6 rounded-2xl text-center max-w-md"
+          className="p-8 text-center max-w-md border"
           style={{
             backgroundColor: isDarkMode ? DARK_COLORS.SURFACE : READER_THEME.SURFACE,
-            boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
+            borderColor: isDarkMode ? DARK_COLORS.NEUTRAL : COLORS.NEUTRAL,
           }}
         >
-          <p className="text-lg mb-2" style={{ color: isDarkMode ? DARK_COLORS.TEXT : COLORS.PRIMARY_DARK }}>
-            Could not load book
+          <p className="font-mincho font-bold text-lg mb-2" style={{ color: isDarkMode ? DARK_COLORS.TEXT : COLORS.INK }}>
+            本を読み込めませんでした
           </p>
-          <p className="text-sm mb-4" style={{ color: '#8E8E93' }}>
+          <p className="text-sm mb-5" style={{ color: isDarkMode ? DARK_COLORS.TEXT_MUTED : COLORS.SECONDARY }}>
             {error}
           </p>
           <button
             onClick={() => router.push('/library')}
-            className="px-4 py-2 rounded-xl text-sm font-medium"
-            style={{ backgroundColor: COLORS.PRIMARY, color: '#FFFFFF' }}
+            className="min-h-11 px-5 text-sm font-bold interactive-btn"
+            style={{ backgroundColor: COLORS.PRIMARY, color: COLORS.SURFACE }}
           >
-            Back to Library
+            本棚に戻る
           </button>
         </div>
       </div>
@@ -648,8 +642,8 @@ function ReaderContent({
   }
 
   const theme = isDarkMode
-    ? { bg: DARK_COLORS.BASE, surface: DARK_COLORS.SURFACE, text: DARK_COLORS.TEXT }
-    : { bg: READER_THEME.SURFACE_MUTED, surface: READER_THEME.SURFACE, text: '#000000' };
+    ? { bg: DARK_COLORS.BASE, surface: DARK_COLORS.SURFACE, text: DARK_COLORS.TEXT, muted: DARK_COLORS.TEXT_MUTED, rule: DARK_COLORS.NEUTRAL }
+    : { bg: READER_THEME.SURFACE, surface: READER_THEME.SURFACE_MUTED, text: COLORS.INK, muted: COLORS.SECONDARY, rule: COLORS.NEUTRAL };
 
   const hasBookmark = bookmarkPage != null && bookmarkPage > 0;
 
@@ -677,20 +671,19 @@ function ReaderContent({
             alignItems: 'center',
             gap: 8,
             padding: '8px 16px',
-            borderRadius: 999,
-            backgroundColor: isDarkMode ? DARK_COLORS.SURFACE : '#FFFFFF',
-            color: isDarkMode ? DARK_COLORS.TEXT : '#1D1D1F',
+            backgroundColor: isDarkMode ? DARK_COLORS.SURFACE : COLORS.SURFACE,
+            color: theme.text,
             boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
-            border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)',
+            border: `1px solid ${theme.rule}`,
             fontSize: 13,
             fontWeight: 500,
           }}
         >
           <span
             className="animate-spin"
-            style={{ width: 14, height: 14, borderWidth: 2, borderStyle: 'solid', borderColor: '#FF9500', borderTopColor: 'transparent', borderRadius: '50%' }}
+            style={{ width: 14, height: 14, borderWidth: 2, borderStyle: 'solid', borderColor: COLORS.START_CURSOR, borderTopColor: 'transparent', borderRadius: '50%' }}
           />
-          Analyzing importance...
+          重要度を分析中…
         </div>
       )}
 
@@ -703,11 +696,10 @@ function ReaderContent({
             transform: 'translateX(-50%)',
             zIndex: 60,
             padding: '8px 16px',
-            borderRadius: 999,
-            backgroundColor: isDarkMode ? DARK_COLORS.SURFACE : '#FFFFFF',
-            color: '#FF3B30',
+            backgroundColor: isDarkMode ? DARK_COLORS.SURFACE : COLORS.SURFACE,
+            color: COLORS.DANGER,
             boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
-            border: '1px solid rgba(255,59,48,0.3)',
+            border: `1px solid ${COLORS.DANGER}`,
             fontSize: 13,
             fontWeight: 500,
           }}
@@ -716,7 +708,7 @@ function ReaderContent({
         </div>
       )}
 
-      <ProgressBar progress={progress} />
+      <ProgressBar progress={progress} isDarkMode={isDarkMode} />
 
       <ReaderHeader
         currentPage={currentPage}
@@ -759,8 +751,8 @@ function ReaderContent({
 
         {totalPages > 1 && (
           <div
-            className="flex justify-center items-center gap-4 mt-8 pt-4 border-t"
-            style={{ borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}
+            className="flex justify-between items-center gap-4 mt-10 pt-5 border-t font-gothic"
+            style={{ borderColor: theme.rule }}
           >
             <button
               onClick={(e) => {
@@ -768,15 +760,12 @@ function ReaderContent({
                 handlePageChange(currentPage - 1);
               }}
               disabled={currentPage <= 1}
-              className="px-5 py-2.5 rounded-xl disabled:opacity-30 transition-all duration-200 text-sm font-medium"
-              style={{
-                backgroundColor: currentPage <= 1 ? (isDarkMode ? DARK_COLORS.NEUTRAL : '#F2F2F7') : '#007AFF',
-                color: currentPage <= 1 ? (isDarkMode ? DARK_COLORS.TEXT : '#1D1D1F') : '#FFFFFF',
-              }}
+              className="min-h-11 px-4 border disabled:opacity-30 text-sm interactive-page-btn"
+              style={{ borderColor: theme.rule, color: theme.text }}
             >
-              Previous
+              前のページ
             </button>
-            <span className="text-sm" style={{ color: '#8E8E93' }}>
+            <span className="text-sm" style={{ color: theme.muted }}>
               {currentPage} / {totalPages}
             </span>
             <button
@@ -785,32 +774,29 @@ function ReaderContent({
                 handlePageChange(currentPage + 1);
               }}
               disabled={currentPage >= totalPages}
-              className="px-5 py-2.5 rounded-xl disabled:opacity-30 transition-all duration-200 text-sm font-medium"
-              style={{
-                backgroundColor: currentPage >= totalPages ? (isDarkMode ? DARK_COLORS.NEUTRAL : '#F2F2F7') : '#007AFF',
-                color: currentPage >= totalPages ? (isDarkMode ? DARK_COLORS.TEXT : '#1D1D1F') : '#FFFFFF',
-              }}
+              className="min-h-11 px-4 border disabled:opacity-30 text-sm font-bold interactive-page-btn"
+              style={{ borderColor: theme.text, color: theme.text }}
             >
-              Next
+              次のページ
             </button>
           </div>
         )}
 
         {isGuest && (
           <div
-            className="mt-10 rounded-2xl p-6 text-center"
-            style={{ backgroundColor: theme.surface, border: '1px solid rgba(0,0,0,0.06)' }}
+            className="mt-10 p-6 text-center font-gothic"
+            style={{ backgroundColor: theme.surface, border: `1px solid ${theme.rule}` }}
           >
             <p className="text-base font-semibold mb-1" style={{ color: theme.text }}>
               End of preview
             </p>
-            <p className="text-sm mb-4" style={{ color: '#8E8E93' }}>
+            <p className="text-sm mb-4" style={{ color: theme.muted }}>
               You are reading a free sample. Sign in to read the full book.
             </p>
             <button
               onClick={() => router.push('/login')}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium"
-              style={{ backgroundColor: COLORS.PRIMARY, color: '#FFFFFF' }}
+              className="min-h-11 px-5 text-sm font-bold interactive-btn"
+              style={{ backgroundColor: COLORS.PRIMARY, color: COLORS.SURFACE }}
             >
               Sign in
             </button>
@@ -918,13 +904,13 @@ export default function ReadPage() {
       fallback={
         <div
           className="min-h-screen flex items-center justify-center"
-          style={{ backgroundColor: READER_THEME.SURFACE_MUTED }}
+          style={{ backgroundColor: READER_THEME.SURFACE }}
         >
           <div
-            className="w-12 h-12 border-4 rounded-full animate-spin"
+            className="w-10 h-10 border-2 rounded-full animate-spin"
             style={{
-              borderColor: '#E5E5EA',
-              borderTopColor: '#007AFF',
+              borderColor: COLORS.NEUTRAL,
+              borderTopColor: COLORS.INK,
             }}
           />
         </div>

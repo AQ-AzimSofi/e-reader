@@ -9,7 +9,37 @@
 import { useEffect, useState } from 'react';
 import { useTextFileList } from '@/app/hooks/useTextFileList';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { CSS_VARS, STORAGE_KEYS, API_ROUTES } from '@/lib/constants';
+import { COLORS, STORAGE_KEYS, API_ROUTES } from '@/lib/constants';
+import { toTint } from '@/lib/utils/colorTint';
+
+const BAR_BUTTON_CLASS = 'px-4 py-2 border font-medium cursor-pointer transition-colors';
+const BAR_NAV_LINK_CLASS = 'px-1 py-2 border-b-2 cursor-pointer interactive-link';
+const BAR_SELECT_CLASS = 'px-3 py-1.5 border text-xs focus:outline-none focus:ring-2 transition-colors';
+const MINI_BUTTON_CLASS = 'p-2 border cursor-pointer transition-colors';
+const DRAWER_BUTTON_CLASS = 'w-full px-4 py-3 border font-medium text-sm cursor-pointer transition-colors';
+const DRAWER_NAV_LINK_CLASS = 'py-2.5 border-b-2 text-sm cursor-pointer interactive-link';
+const DRAWER_SELECT_CLASS = 'w-full px-4 py-3 border text-sm focus:outline-none focus:ring-2';
+
+const SELECT_STYLE = {
+  backgroundColor: COLORS.SURFACE,
+  borderColor: COLORS.NEUTRAL,
+  '--tw-ring-color': COLORS.PRIMARY,
+} as React.CSSProperties;
+
+function toggleStyle(isOn: boolean): React.CSSProperties {
+  return {
+    backgroundColor: isOn ? COLORS.INK : 'transparent',
+    borderColor: isOn ? COLORS.INK : COLORS.NEUTRAL,
+    color: isOn ? COLORS.SURFACE : COLORS.SECONDARY,
+  };
+}
+
+function navLinkStyle(isCurrentPage: boolean): React.CSSProperties {
+  return {
+    borderColor: isCurrentPage ? COLORS.PRIMARY : 'transparent',
+    fontWeight: isCurrentPage ? 700 : 400,
+  };
+}
 
 export default function TopNavigation() {
   const router = useRouter();
@@ -162,10 +192,11 @@ export default function TopNavigation() {
     <>
       {/* トップナビゲーションバー */}
       <div
-        className="backdrop-blur-sm fixed top-0 left-0 w-full px-4 md:px-6 z-50 text-xs shadow-md border-b transition-all duration-300"
+        className="fixed top-0 left-0 w-full px-4 md:px-6 z-50 text-xs border-b transition-all duration-300"
         style={{
-          backgroundColor: `color-mix(in srgb, ${CSS_VARS.BASE} 95%, transparent)`,
-          borderColor: CSS_VARS.NEUTRAL,
+          backgroundColor: COLORS.BASE,
+          borderColor: COLORS.INK,
+          color: COLORS.INK,
           paddingTop: isCollapsed ? '0.25rem' : '0.75rem',
           paddingBottom: isCollapsed ? '0.25rem' : '0.75rem',
         }}
@@ -176,7 +207,7 @@ export default function TopNavigation() {
           {/* モバイル：ハンバーガーメニューアイコン */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg interactive-nav-btn"
+            className="md:hidden p-2 interactive-nav-btn"
             aria-label="メニューを開く"
           >
             <svg
@@ -209,27 +240,19 @@ export default function TopNavigation() {
             {showFileSelector && (
               <>
                 {/* ディレクトリ選択ドロップダウン */}
-                <div
-                  className="flex items-center gap-2.5 px-4 py-2 rounded-lg shadow-sm border"
-                  style={{
-                    backgroundColor: CSS_VARS.NEUTRAL,
-                    borderColor: CSS_VARS.NEUTRAL,
-                  }}
-                >
-                  <label htmlFor="directory-selector" className="font-medium text-gray-700">
+                <div className="flex items-center gap-2.5 min-h-12">
+                  <label htmlFor="directory-selector" className="font-medium" style={{ color: COLORS.SECONDARY }}>
                     ディレクトリ:
                   </label>
                   {isLoading ? (
-                    <span className="text-gray-400">読み込み中...</span>
+                    <span style={{ color: COLORS.SECONDARY }}>読み込み中...</span>
                   ) : (
                     <select
                       id="directory-selector"
                       value={currentDirectory}
                       onChange={(e) => handleDirectoryChange(e.target.value)}
-                      className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-xs shadow-sm transition-all hover:border-gray-400"
-                      style={{
-                        '--tw-ring-color': CSS_VARS.PRIMARY,
-                      } as React.CSSProperties}
+                      className={BAR_SELECT_CLASS}
+                      style={SELECT_STYLE}
                     >
                       {directories.map((dir) => (
                         <option key={dir} value={dir}>
@@ -241,27 +264,19 @@ export default function TopNavigation() {
                 </div>
 
                 {/* ファイル選択ドロップダウン */}
-                <div
-                  className="flex items-center gap-2.5 px-4 py-2 rounded-lg shadow-sm border"
-                  style={{
-                    backgroundColor: CSS_VARS.NEUTRAL,
-                    borderColor: CSS_VARS.NEUTRAL,
-                  }}
-                >
-                  <label htmlFor="file-selector" className="font-medium text-gray-700">
+                <div className="flex items-center gap-2.5 min-h-12">
+                  <label htmlFor="file-selector" className="font-medium" style={{ color: COLORS.SECONDARY }}>
                     ファイル:
                   </label>
                   {isLoading ? (
-                    <span className="text-gray-400">読み込み中...</span>
+                    <span style={{ color: COLORS.SECONDARY }}>読み込み中...</span>
                   ) : (
                     <select
                       id="file-selector"
                       value={currentFile}
                       onChange={(e) => handleFileChange(e.target.value)}
-                      className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-xs shadow-sm transition-all hover:border-gray-400"
-                      style={{
-                        '--tw-ring-color': CSS_VARS.SECONDARY,
-                      } as React.CSSProperties}
+                      className={BAR_SELECT_CLASS}
+                      style={SELECT_STYLE}
                     >
                       {filesInCurrentDirectory.map((file) => (
                         <option key={file} value={file}>
@@ -277,14 +292,8 @@ export default function TopNavigation() {
             {/* 表示トグルボタン */}
             <button
               onClick={toggleDropdownState}
-              className="px-4 py-2 rounded-lg font-medium shadow-sm transition-all hover:shadow-md hover:scale-105 active:scale-95 border"
-              style={{
-                backgroundColor: dropdownAlwaysOpen
-                  ? `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`
-                  : `color-mix(in srgb, ${CSS_VARS.PRIMARY} 20%, transparent)`,
-                borderColor: dropdownAlwaysOpen ? CSS_VARS.SECONDARY : CSS_VARS.PRIMARY,
-                color: dropdownAlwaysOpen ? CSS_VARS.SECONDARY : CSS_VARS.PRIMARY,
-              }}
+              className={BAR_BUTTON_CLASS}
+              style={{ borderColor: COLORS.INK }}
             >
               {dropdownAlwaysOpen ? '折りたたみ表示' : '展開表示'}
             </button>
@@ -292,14 +301,8 @@ export default function TopNavigation() {
             {/* 振り仮名トグルボタン */}
             <button
               onClick={toggleFurigana}
-              className="px-4 py-2 rounded-lg font-medium shadow-sm transition-all hover:shadow-md hover:scale-105 active:scale-95 border"
-              style={{
-                backgroundColor: showFurigana
-                  ? `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`
-                  : CSS_VARS.NEUTRAL,
-                borderColor: showFurigana ? CSS_VARS.SECONDARY : CSS_VARS.NEUTRAL,
-                color: showFurigana ? CSS_VARS.SECONDARY : '#6b7280',
-              }}
+              className={BAR_BUTTON_CLASS}
+              style={toggleStyle(showFurigana)}
             >
               {showFurigana ? '振り仮名 ON' : '振り仮名 OFF'}
             </button>
@@ -307,14 +310,8 @@ export default function TopNavigation() {
             {/* 単語帳モードトグルボタン */}
             <button
               onClick={toggleVocabularyMode}
-              className="px-4 py-2 rounded-lg font-medium shadow-sm transition-all hover:shadow-md hover:scale-105 active:scale-95 border"
-              style={{
-                backgroundColor: vocabularyMode
-                  ? `color-mix(in srgb, ${CSS_VARS.PRIMARY} 30%, transparent)`
-                  : CSS_VARS.NEUTRAL,
-                borderColor: vocabularyMode ? CSS_VARS.PRIMARY : CSS_VARS.NEUTRAL,
-                color: vocabularyMode ? CSS_VARS.PRIMARY : '#6b7280',
-              }}
+              className={BAR_BUTTON_CLASS}
+              style={toggleStyle(vocabularyMode)}
             >
               {vocabularyMode ? '単語帳 ON' : '単語帳 OFF'}
             </button>
@@ -322,83 +319,53 @@ export default function TopNavigation() {
             {/* AI解説トグルボタン */}
             <button
               onClick={toggleAiExplanation}
-              className="px-4 py-2 rounded-lg font-medium shadow-sm transition-all hover:shadow-md hover:scale-105 active:scale-95 border"
-              style={{
-                backgroundColor: aiExplanationEnabled
-                  ? `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`
-                  : CSS_VARS.NEUTRAL,
-                borderColor: aiExplanationEnabled ? CSS_VARS.SECONDARY : CSS_VARS.NEUTRAL,
-                color: aiExplanationEnabled ? CSS_VARS.SECONDARY : '#6b7280',
-              }}
+              className={BAR_BUTTON_CLASS}
+              style={toggleStyle(aiExplanationEnabled)}
             >
-              {aiExplanationEnabled ? '🤖 AI解説 ON' : 'AI解説 OFF'}
+              {aiExplanationEnabled ? 'AI解説 ON' : 'AI解説 OFF'}
             </button>
 
             {/* ページナビゲーション */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <a
                 href="/text-input"
-                className="px-4 py-2 rounded-lg border font-medium shadow-sm transition-all hover:shadow-md hover:scale-105 active:scale-95"
-                style={{
-                  backgroundColor: `color-mix(in srgb, ${CSS_VARS.PRIMARY} 20%, transparent)`,
-                  borderColor: CSS_VARS.PRIMARY,
-                  color: CSS_VARS.PRIMARY,
-                }}
+                className={BAR_NAV_LINK_CLASS}
+                style={navLinkStyle(pathname === '/text-input')}
               >
                 入力
               </a>
               <a
                 href="/text-input-ai"
-                className="px-4 py-2 rounded-lg border font-medium shadow-sm transition-all hover:shadow-md hover:scale-105 active:scale-95"
-                style={{
-                  backgroundColor: `color-mix(in srgb, ${CSS_VARS.PRIMARY} 20%, transparent)`,
-                  borderColor: CSS_VARS.PRIMARY,
-                  color: CSS_VARS.PRIMARY,
-                }}
+                className={BAR_NAV_LINK_CLASS}
+                style={navLinkStyle(pathname === '/text-input-ai')}
               >
                 入力-AI
               </a>
               <a
                 href="/ocr"
-                className="px-4 py-2 rounded-lg border font-medium shadow-sm transition-all hover:shadow-md hover:scale-105 active:scale-95"
-                style={{
-                  backgroundColor: `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`,
-                  borderColor: CSS_VARS.SECONDARY,
-                  color: CSS_VARS.SECONDARY,
-                }}
+                className={BAR_NAV_LINK_CLASS}
+                style={navLinkStyle(pathname === '/ocr')}
               >
                 OCR
               </a>
               <a
                 href="/visual-novel"
-                className="px-4 py-2 rounded-lg border font-medium shadow-sm transition-all hover:shadow-md hover:scale-105 active:scale-95"
-                style={{
-                  backgroundColor: `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`,
-                  borderColor: CSS_VARS.SECONDARY,
-                  color: CSS_VARS.SECONDARY,
-                }}
+                className={BAR_NAV_LINK_CLASS}
+                style={navLinkStyle(pathname === '/visual-novel')}
               >
                 ビジュアルノベル
               </a>
               <a
                 href="/book-reader"
-                className="px-4 py-2 rounded-lg border font-medium shadow-sm transition-all hover:shadow-md hover:scale-105 active:scale-95"
-                style={{
-                  backgroundColor: `color-mix(in srgb, ${CSS_VARS.PRIMARY} 20%, transparent)`,
-                  borderColor: CSS_VARS.PRIMARY,
-                  color: CSS_VARS.PRIMARY,
-                }}
+                className={BAR_NAV_LINK_CLASS}
+                style={navLinkStyle(pathname === '/book-reader')}
               >
                 読書
               </a>
               <a
                 href="/vocabulary"
-                className="px-4 py-2 rounded-lg border font-medium shadow-sm transition-all hover:shadow-md hover:scale-105 active:scale-95"
-                style={{
-                  backgroundColor: `color-mix(in srgb, ${CSS_VARS.PRIMARY} 30%, transparent)`,
-                  borderColor: CSS_VARS.PRIMARY,
-                  color: CSS_VARS.PRIMARY,
-                }}
+                className={BAR_NAV_LINK_CLASS}
+                style={navLinkStyle(pathname === '/vocabulary')}
               >
                 単語帳
               </a>
@@ -406,12 +373,8 @@ export default function TopNavigation() {
                 onClick={() => {
                   window.dispatchEvent(new CustomEvent('toggleRubyLookup'));
                 }}
-                className="px-4 py-2 rounded-lg border font-medium shadow-sm transition-all hover:shadow-md hover:scale-105 active:scale-95"
-                style={{
-                  backgroundColor: `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`,
-                  borderColor: CSS_VARS.SECONDARY,
-                  color: CSS_VARS.SECONDARY,
-                }}
+                className={BAR_NAV_LINK_CLASS}
+                style={navLinkStyle(false)}
                 title="Ruby Lookup (Ctrl+K or /)"
               >
                 Ruby
@@ -421,12 +384,8 @@ export default function TopNavigation() {
                   await fetch(API_ROUTES.AUTH_LOGOUT, { method: 'POST' });
                   window.location.href = '/login';
                 }}
-                className="px-4 py-2 rounded-lg border font-medium shadow-sm transition-all hover:shadow-md hover:scale-105 active:scale-95"
-                style={{
-                  backgroundColor: '#fef2f2',
-                  borderColor: '#ef4444',
-                  color: '#ef4444',
-                }}
+                className={BAR_NAV_LINK_CLASS}
+                style={{ ...navLinkStyle(false), color: COLORS.SECONDARY }}
               >
                 ログアウト
               </button>
@@ -445,9 +404,9 @@ export default function TopNavigation() {
           {/* 折りたたみトグルボタン */}
           <button
             onClick={toggleTopNavCollapse}
-            className="p-1 rounded-lg interactive-nav-btn ml-auto"
+            className="p-1 interactive-nav-btn ml-auto"
             aria-label={isCollapsed ? 'ナビゲーションを展開' : 'ナビゲーションを折りたたむ'}
-            style={{ color: CSS_VARS.PRIMARY }}
+            style={{ color: COLORS.INK }}
           >
             <svg
               className="w-4 h-4 transition-transform duration-300"
@@ -471,14 +430,8 @@ export default function TopNavigation() {
               {/* 単語帳モードトグル */}
               <button
                 onClick={toggleVocabularyMode}
-                className="p-2 rounded-lg border shadow-md transition-all hover:shadow-lg hover:scale-105 active:scale-95"
-                style={{
-                  backgroundColor: vocabularyMode
-                    ? `color-mix(in srgb, ${CSS_VARS.PRIMARY} 30%, transparent)`
-                    : CSS_VARS.BASE,
-                  borderColor: CSS_VARS.PRIMARY,
-                  color: CSS_VARS.PRIMARY,
-                }}
+                className={MINI_BUTTON_CLASS}
+                style={toggleStyle(vocabularyMode)}
                 title={vocabularyMode ? '単語帳モード ON' : '単語帳モード OFF'}
                 aria-label={vocabularyMode ? '単語帳モード ON' : '単語帳モード OFF'}
               >
@@ -490,14 +443,8 @@ export default function TopNavigation() {
               {/* 振り仮名トグル */}
               <button
                 onClick={toggleFurigana}
-                className="p-2 rounded-lg border shadow-md transition-all hover:shadow-lg hover:scale-105 active:scale-95"
-                style={{
-                  backgroundColor: showFurigana
-                    ? `color-mix(in srgb, ${CSS_VARS.SECONDARY} 30%, transparent)`
-                    : CSS_VARS.BASE,
-                  borderColor: CSS_VARS.SECONDARY,
-                  color: CSS_VARS.SECONDARY,
-                }}
+                className={MINI_BUTTON_CLASS}
+                style={toggleStyle(showFurigana)}
                 title={showFurigana ? '振り仮名 ON' : '振り仮名 OFF'}
                 aria-label={showFurigana ? '振り仮名 ON' : '振り仮名 OFF'}
               >
@@ -509,31 +456,21 @@ export default function TopNavigation() {
               {/* AI解説トグル */}
               <button
                 onClick={toggleAiExplanation}
-                className="p-2 rounded-lg border shadow-md transition-all hover:shadow-lg hover:scale-105 active:scale-95"
-                style={{
-                  backgroundColor: aiExplanationEnabled
-                    ? `color-mix(in srgb, ${CSS_VARS.SECONDARY} 30%, transparent)`
-                    : CSS_VARS.BASE,
-                  borderColor: CSS_VARS.SECONDARY,
-                  color: CSS_VARS.SECONDARY,
-                }}
+                className={MINI_BUTTON_CLASS}
+                style={toggleStyle(aiExplanationEnabled)}
                 title={aiExplanationEnabled ? 'AI解説 ON' : 'AI解説 OFF'}
                 aria-label={aiExplanationEnabled ? 'AI解説 ON' : 'AI解説 OFF'}
               >
-                <span className="text-lg">
-                  {aiExplanationEnabled ? '🤖' : '💬'}
+                <span className="text-lg font-bold">
+                  AI
                 </span>
               </button>
 
               {/* 単語帳ページへのリンク */}
               <a
                 href="/vocabulary"
-                className="p-2 rounded-lg border shadow-md transition-all hover:shadow-lg hover:scale-105 active:scale-95"
-                style={{
-                  backgroundColor: CSS_VARS.BASE,
-                  borderColor: CSS_VARS.PRIMARY,
-                  color: CSS_VARS.PRIMARY,
-                }}
+                className="p-2 border-b-2 cursor-pointer interactive-link"
+                style={{ borderColor: pathname === '/vocabulary' ? COLORS.PRIMARY : 'transparent' }}
                 title="単語帳ページへ"
                 aria-label="単語帳ページへ"
               >
@@ -552,30 +489,33 @@ export default function TopNavigation() {
       >
         {/* 背景オーバーレイ */}
         <div
-          className="absolute inset-0 bg-black bg-opacity-50"
+          className="absolute inset-0"
+          style={{ backgroundColor: toTint(COLORS.INK, 40) }}
           onClick={closeMobileMenu}
         />
 
         {/* メニュードロワー */}
         <div
-          className={`absolute top-0 left-0 h-full w-80 max-w-[85vw] shadow-2xl transition-transform duration-300 ease-in-out ${
+          className={`absolute top-0 left-0 h-full w-80 max-w-[85vw] border-r transition-transform duration-300 ease-in-out ${
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
           style={{
-            backgroundColor: CSS_VARS.BASE,
+            backgroundColor: COLORS.SURFACE,
+            borderColor: COLORS.NEUTRAL,
+            color: COLORS.INK,
           }}
         >
           {/* メニューヘッダー */}
           <div
             className="flex items-center justify-between p-4 border-b"
             style={{
-              borderColor: CSS_VARS.NEUTRAL,
+              borderColor: COLORS.INK,
             }}
           >
-            <h2 className="text-lg font-semibold">メニュー</h2>
+            <h2 className="font-mincho font-bold text-lg">メニュー</h2>
             <button
               onClick={closeMobileMenu}
-              className="p-2 rounded-lg interactive-nav-btn"
+              className="p-2 interactive-nav-btn"
               aria-label="メニューを閉じる"
             >
               <svg
@@ -600,15 +540,15 @@ export default function TopNavigation() {
               {/* ファイル選択セクション */}
               {showFileSelector && (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">ファイル選択</h3>
+                  <h3 className="text-sm font-bold mb-2" style={{ color: COLORS.SECONDARY }}>ファイル選択</h3>
 
                   {/* ディレクトリ選択 */}
                   <div className="space-y-1.5">
-                    <label htmlFor="mobile-directory-selector" className="text-xs font-medium text-gray-600">
+                    <label htmlFor="mobile-directory-selector" className="text-xs font-medium" style={{ color: COLORS.SECONDARY }}>
                       ディレクトリ
                     </label>
                     {isLoading ? (
-                      <span className="text-xs text-gray-400">読み込み中...</span>
+                      <span className="text-xs" style={{ color: COLORS.SECONDARY }}>読み込み中...</span>
                     ) : (
                       <select
                         id="mobile-directory-selector"
@@ -617,10 +557,8 @@ export default function TopNavigation() {
                           handleDirectoryChange(e.target.value);
                           closeMobileMenu();
                         }}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-sm shadow-sm"
-                        style={{
-                          '--tw-ring-color': CSS_VARS.PRIMARY,
-                        } as React.CSSProperties}
+                        className={DRAWER_SELECT_CLASS}
+                        style={SELECT_STYLE}
                       >
                         {directories.map((dir) => (
                           <option key={dir} value={dir}>
@@ -633,11 +571,11 @@ export default function TopNavigation() {
 
                   {/* ファイル選択 */}
                   <div className="space-y-1.5">
-                    <label htmlFor="mobile-file-selector" className="text-xs font-medium text-gray-600">
+                    <label htmlFor="mobile-file-selector" className="text-xs font-medium" style={{ color: COLORS.SECONDARY }}>
                       ファイル
                     </label>
                     {isLoading ? (
-                      <span className="text-xs text-gray-400">読み込み中...</span>
+                      <span className="text-xs" style={{ color: COLORS.SECONDARY }}>読み込み中...</span>
                     ) : (
                       <select
                         id="mobile-file-selector"
@@ -646,10 +584,8 @@ export default function TopNavigation() {
                           handleFileChange(e.target.value);
                           closeMobileMenu();
                         }}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-sm shadow-sm"
-                        style={{
-                          '--tw-ring-color': CSS_VARS.SECONDARY,
-                        } as React.CSSProperties}
+                        className={DRAWER_SELECT_CLASS}
+                        style={SELECT_STYLE}
                       >
                         {filesInCurrentDirectory.map((file) => (
                           <option key={file} value={file}>
@@ -663,8 +599,8 @@ export default function TopNavigation() {
               )}
 
               {/* 表示設定セクション */}
-              <div className="space-y-3 pt-4 border-t" style={{ borderColor: CSS_VARS.NEUTRAL }}>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">表示設定</h3>
+              <div className="space-y-3 pt-4 border-t" style={{ borderColor: COLORS.NEUTRAL }}>
+                <h3 className="text-sm font-bold mb-2" style={{ color: COLORS.SECONDARY }}>表示設定</h3>
 
                 {/* 表示トグル */}
                 <button
@@ -672,14 +608,8 @@ export default function TopNavigation() {
                     toggleDropdownState();
                     closeMobileMenu();
                   }}
-                  className="w-full px-4 py-3 rounded-lg font-medium shadow-sm transition-all active:scale-95 border text-sm"
-                  style={{
-                    backgroundColor: dropdownAlwaysOpen
-                      ? `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`
-                      : `color-mix(in srgb, ${CSS_VARS.PRIMARY} 20%, transparent)`,
-                    borderColor: dropdownAlwaysOpen ? CSS_VARS.SECONDARY : CSS_VARS.PRIMARY,
-                    color: dropdownAlwaysOpen ? CSS_VARS.SECONDARY : CSS_VARS.PRIMARY,
-                  }}
+                  className={DRAWER_BUTTON_CLASS}
+                  style={{ borderColor: COLORS.INK }}
                 >
                   {dropdownAlwaysOpen ? '折りたたみ表示' : '展開表示'}
                 </button>
@@ -690,14 +620,8 @@ export default function TopNavigation() {
                     toggleFurigana();
                     closeMobileMenu();
                   }}
-                  className="w-full px-4 py-3 rounded-lg font-medium shadow-sm transition-all active:scale-95 border text-sm"
-                  style={{
-                    backgroundColor: showFurigana
-                      ? `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`
-                      : CSS_VARS.NEUTRAL,
-                    borderColor: showFurigana ? CSS_VARS.SECONDARY : CSS_VARS.NEUTRAL,
-                    color: showFurigana ? CSS_VARS.SECONDARY : '#6b7280',
-                  }}
+                  className={DRAWER_BUTTON_CLASS}
+                  style={toggleStyle(showFurigana)}
                 >
                   {showFurigana ? '振り仮名 ON' : '振り仮名 OFF'}
                 </button>
@@ -708,14 +632,8 @@ export default function TopNavigation() {
                     toggleVocabularyMode();
                     closeMobileMenu();
                   }}
-                  className="w-full px-4 py-3 rounded-lg font-medium shadow-sm transition-all active:scale-95 border text-sm"
-                  style={{
-                    backgroundColor: vocabularyMode
-                      ? `color-mix(in srgb, ${CSS_VARS.PRIMARY} 30%, transparent)`
-                      : CSS_VARS.NEUTRAL,
-                    borderColor: vocabularyMode ? CSS_VARS.PRIMARY : CSS_VARS.NEUTRAL,
-                    color: vocabularyMode ? CSS_VARS.PRIMARY : '#6b7280',
-                  }}
+                  className={DRAWER_BUTTON_CLASS}
+                  style={toggleStyle(vocabularyMode)}
                 >
                   {vocabularyMode ? '単語帳 ON' : '単語帳 OFF'}
                 </button>
@@ -726,91 +644,61 @@ export default function TopNavigation() {
                     toggleAiExplanation();
                     closeMobileMenu();
                   }}
-                  className="w-full px-4 py-3 rounded-lg font-medium shadow-sm transition-all active:scale-95 border text-sm"
-                  style={{
-                    backgroundColor: aiExplanationEnabled
-                      ? `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`
-                      : CSS_VARS.NEUTRAL,
-                    borderColor: aiExplanationEnabled ? CSS_VARS.SECONDARY : CSS_VARS.NEUTRAL,
-                    color: aiExplanationEnabled ? CSS_VARS.SECONDARY : '#6b7280',
-                  }}
+                  className={DRAWER_BUTTON_CLASS}
+                  style={toggleStyle(aiExplanationEnabled)}
                 >
-                  {aiExplanationEnabled ? '🤖 AI解説 ON' : 'AI解説 OFF'}
+                  {aiExplanationEnabled ? 'AI解説 ON' : 'AI解説 OFF'}
                 </button>
               </div>
 
               {/* ページナビゲーションセクション */}
-              <div className="space-y-3 pt-4 border-t" style={{ borderColor: CSS_VARS.NEUTRAL }}>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">ページ</h3>
+              <div className="flex flex-col items-start gap-1 pt-4 border-t" style={{ borderColor: COLORS.NEUTRAL }}>
+                <h3 className="text-sm font-bold mb-2" style={{ color: COLORS.SECONDARY }}>ページ</h3>
 
                 <a
                   href="/text-input"
-                  className="block w-full px-4 py-3 rounded-lg border font-medium shadow-sm transition-all active:scale-95 text-center text-sm"
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${CSS_VARS.PRIMARY} 20%, transparent)`,
-                    borderColor: CSS_VARS.PRIMARY,
-                    color: CSS_VARS.PRIMARY,
-                  }}
+                  className={DRAWER_NAV_LINK_CLASS}
+                  style={navLinkStyle(pathname === '/text-input')}
                   onClick={closeMobileMenu}
                 >
                   入力
                 </a>
                 <a
                   href="/text-input-ai"
-                  className="block w-full px-4 py-3 rounded-lg border font-medium shadow-sm transition-all active:scale-95 text-center text-sm"
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${CSS_VARS.PRIMARY} 20%, transparent)`,
-                    borderColor: CSS_VARS.PRIMARY,
-                    color: CSS_VARS.PRIMARY,
-                  }}
+                  className={DRAWER_NAV_LINK_CLASS}
+                  style={navLinkStyle(pathname === '/text-input-ai')}
                   onClick={closeMobileMenu}
                 >
                   入力-AI
                 </a>
                 <a
                   href="/ocr"
-                  className="block w-full px-4 py-3 rounded-lg border font-medium shadow-sm transition-all active:scale-95 text-center text-sm"
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`,
-                    borderColor: CSS_VARS.SECONDARY,
-                    color: CSS_VARS.SECONDARY,
-                  }}
+                  className={DRAWER_NAV_LINK_CLASS}
+                  style={navLinkStyle(pathname === '/ocr')}
                   onClick={closeMobileMenu}
                 >
                   OCR
                 </a>
                 <a
                   href="/visual-novel"
-                  className="block w-full px-4 py-3 rounded-lg border font-medium shadow-sm transition-all active:scale-95 text-center text-sm"
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`,
-                    borderColor: CSS_VARS.SECONDARY,
-                    color: CSS_VARS.SECONDARY,
-                  }}
+                  className={DRAWER_NAV_LINK_CLASS}
+                  style={navLinkStyle(pathname === '/visual-novel')}
                   onClick={closeMobileMenu}
                 >
                   ビジュアルノベル
                 </a>
                 <a
                   href="/book-reader"
-                  className="block w-full px-4 py-3 rounded-lg border font-medium shadow-sm transition-all active:scale-95 text-center text-sm"
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${CSS_VARS.PRIMARY} 20%, transparent)`,
-                    borderColor: CSS_VARS.PRIMARY,
-                    color: CSS_VARS.PRIMARY,
-                  }}
+                  className={DRAWER_NAV_LINK_CLASS}
+                  style={navLinkStyle(pathname === '/book-reader')}
                   onClick={closeMobileMenu}
                 >
                   読書
                 </a>
                 <a
                   href="/vocabulary"
-                  className="block w-full px-4 py-3 rounded-lg border font-medium shadow-sm transition-all active:scale-95 text-center text-sm"
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${CSS_VARS.PRIMARY} 30%, transparent)`,
-                    borderColor: CSS_VARS.PRIMARY,
-                    color: CSS_VARS.PRIMARY,
-                  }}
+                  className={DRAWER_NAV_LINK_CLASS}
+                  style={navLinkStyle(pathname === '/vocabulary')}
                   onClick={closeMobileMenu}
                 >
                   単語帳
@@ -820,12 +708,8 @@ export default function TopNavigation() {
                     window.dispatchEvent(new CustomEvent('toggleRubyLookup'));
                     closeMobileMenu();
                   }}
-                  className="block w-full px-4 py-3 rounded-lg border font-medium shadow-sm transition-all active:scale-95 text-center text-sm"
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`,
-                    borderColor: CSS_VARS.SECONDARY,
-                    color: CSS_VARS.SECONDARY,
-                  }}
+                  className={DRAWER_NAV_LINK_CLASS}
+                  style={navLinkStyle(false)}
                 >
                   Ruby Lookup
                 </button>
@@ -834,12 +718,8 @@ export default function TopNavigation() {
                     await fetch(API_ROUTES.AUTH_LOGOUT, { method: 'POST' });
                     window.location.href = '/login';
                   }}
-                  className="block w-full px-4 py-3 rounded-lg border font-medium shadow-sm transition-all active:scale-95 text-center text-sm"
-                  style={{
-                    backgroundColor: '#fef2f2',
-                    borderColor: '#ef4444',
-                    color: '#ef4444',
-                  }}
+                  className={DRAWER_NAV_LINK_CLASS}
+                  style={{ ...navLinkStyle(false), color: COLORS.SECONDARY }}
                 >
                   ログアウト
                 </button>

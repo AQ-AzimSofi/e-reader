@@ -4,7 +4,7 @@ import { useMemo, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import { parseReaderItems } from "@/lib/utils/buildPlayableUnits";
 import { stripFurigana } from "@/lib/utils/furiganaParser";
-import { PRIORITY_LEVELS, type PriorityScore } from "@/lib/constants";
+import { COLORS, PRIORITY_LEVELS, type PriorityScore } from "@/lib/constants";
 
 const CollapsibleItem = dynamic(
   () => import("@/app/components/reading/CollapsibleItem"),
@@ -128,13 +128,10 @@ export default function ReadingContent({
   if (parsedItems.length === 0) {
     return (
       <div
-        className="p-8 text-center rounded-2xl"
-        style={{
-          backgroundColor: "#FFFFFF",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.06)",
-        }}
+        className="p-8 text-center font-gothic text-sm"
+        style={{ border: `1px solid ${COLORS.NEUTRAL}` }}
       >
-        <p style={{ color: "#8E8E93" }}>No content to display</p>
+        <p style={{ color: COLORS.SECONDARY }}>No content to display</p>
       </div>
     );
   }

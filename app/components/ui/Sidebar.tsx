@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useReadingProgress } from "@/app/hooks/useReadingProgress";
-import { CSS_VARS } from "@/lib/constants";
+import { COLORS } from "@/lib/constants";
 
 interface SidebarProps {
   setDropdownAlwaysOpen: (state: boolean) => void;
@@ -86,11 +86,11 @@ export default function Sidebar({
         {/* 表示/隠す ボタン */}
         <button
           onClick={() => setDropdownAlwaysOpen(!dropdownAlwaysOpen)}
-          className="px-4 py-2.5 rounded-lg font-medium shadow-lg interactive-pill border"
+          className="min-h-11 px-5 text-sm font-bold cursor-pointer interactive-link border"
           style={{
-            backgroundColor: dropdownAlwaysOpen ? CSS_VARS.BASE : CSS_VARS.NEUTRAL,
-            borderColor: CSS_VARS.NEUTRAL,
-            color: dropdownAlwaysOpen ? '#374151' : '#4b5563',
+            backgroundColor: dropdownAlwaysOpen ? COLORS.SURFACE : COLORS.NEUTRAL_SOFT,
+            borderColor: COLORS.NEUTRAL,
+            color: dropdownAlwaysOpen ? COLORS.INK : COLORS.SECONDARY_DARK,
           }}
         >
           {dropdownAlwaysOpen ? "表示" : "隠す"}
@@ -99,33 +99,36 @@ export default function Sidebar({
         {/* プログレスインジケーター */}
         {showProgress && (
           <div
-            className="rounded-lg shadow-lg border p-3 w-64"
+            className="border p-3 w-64"
             style={{
-              backgroundColor: CSS_VARS.BASE,
-              borderColor: CSS_VARS.NEUTRAL,
+              backgroundColor: COLORS.SURFACE,
+              borderColor: COLORS.NEUTRAL,
             }}
           >
             <div className="space-y-2">
               {/* プログレスバー */}
               <div
-                className="relative h-6 rounded-full overflow-hidden"
-                style={{ backgroundColor: CSS_VARS.NEUTRAL }}
+                className="relative h-6 overflow-hidden"
+                style={{ backgroundColor: COLORS.NEUTRAL }}
               >
                 <div
                   className="absolute inset-y-0 left-0 transition-all duration-300 ease-out flex items-center justify-center"
                   style={{
                     width: `${progress.percentage}%`,
-                    background: `linear-gradient(to right, ${CSS_VARS.SECONDARY}, ${CSS_VARS.SECONDARY_DARK})`,
+                    backgroundColor: COLORS.INK,
                   }}
                 >
                   {progress.percentage > 15 && (
-                    <span className="text-white font-bold text-xs">
+                    <span className="font-bold text-xs" style={{ color: COLORS.SURFACE }}>
                       {progress.percentage}%
                     </span>
                   )}
                 </div>
                 {progress.percentage <= 15 && (
-                  <span className="absolute inset-0 flex items-center justify-center text-gray-600 font-bold text-xs">
+                  <span
+                    className="absolute inset-0 flex items-center justify-center font-bold text-xs"
+                    style={{ color: COLORS.INK }}
+                  >
                     {progress.percentage}%
                   </span>
                 )}
@@ -134,41 +137,35 @@ export default function Sidebar({
               {/* 統計情報 */}
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <div
-                  className="rounded-lg px-2 py-1.5 border"
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`,
-                    borderColor: CSS_VARS.SECONDARY,
-                  }}
+                  className="px-2 py-1.5 border"
+                  style={{ borderColor: COLORS.NEUTRAL }}
                 >
                   <div
                     className="font-medium text-xs"
-                    style={{ color: CSS_VARS.SECONDARY }}
+                    style={{ color: COLORS.SECONDARY }}
                   >
                     文字数
                   </div>
                   <div
                     className="font-bold text-xs"
-                    style={{ color: CSS_VARS.SECONDARY_DARK }}
+                    style={{ color: COLORS.INK }}
                   >
                     {progress.currentCharCount.toLocaleString()} / {progress.totalCharCount.toLocaleString()}
                   </div>
                 </div>
                 <div
-                  className="rounded-lg px-2 py-1.5 border"
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${CSS_VARS.PRIMARY} 20%, transparent)`,
-                    borderColor: CSS_VARS.PRIMARY,
-                  }}
+                  className="px-2 py-1.5 border"
+                  style={{ borderColor: COLORS.NEUTRAL }}
                 >
                   <div
                     className="font-medium text-xs"
-                    style={{ color: CSS_VARS.PRIMARY }}
+                    style={{ color: COLORS.SECONDARY }}
                   >
                     文章数
                   </div>
                   <div
                     className="font-bold text-xs"
-                    style={{ color: CSS_VARS.PRIMARY_DARK }}
+                    style={{ color: COLORS.INK }}
                   >
                     {progress.currentItemIndex} / {progress.totalItems}
                   </div>
@@ -182,11 +179,10 @@ export default function Sidebar({
         <a
           href="#"
           onClick={scrollToBookmark}
-          className="px-4 py-2.5 rounded-lg border font-medium shadow-lg interactive-pill text-center"
+          className="min-h-11 px-5 inline-flex items-center justify-center text-sm font-bold interactive-link"
           style={{
-            backgroundColor: `color-mix(in srgb, ${CSS_VARS.PRIMARY} 20%, transparent)`,
-            borderColor: CSS_VARS.PRIMARY,
-            color: CSS_VARS.PRIMARY,
+            backgroundColor: COLORS.PRIMARY,
+            color: COLORS.SURFACE,
           }}
         >
           ブックマークへ
@@ -196,13 +192,11 @@ export default function Sidebar({
         {allHeaders.length > 0 && (
           <button
             onClick={handleCopyHeaders}
-            className="px-4 py-2.5 rounded-lg border font-medium shadow-lg interactive-pill text-center"
+            className="min-h-11 px-5 border text-sm font-bold cursor-pointer interactive-link text-center"
             style={{
-              backgroundColor: copyFeedback
-                ? `color-mix(in srgb, ${CSS_VARS.SECONDARY} 30%, transparent)`
-                : `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`,
-              borderColor: CSS_VARS.SECONDARY,
-              color: CSS_VARS.SECONDARY,
+              backgroundColor: copyFeedback ? COLORS.NEUTRAL_SOFT : COLORS.SURFACE,
+              borderColor: COLORS.INK,
+              color: COLORS.INK,
             }}
           >
             {copyFeedback ? 'コピー済み!' : 'ヘッダーをコピー'}
@@ -214,15 +208,15 @@ export default function Sidebar({
       {/* ボトムバー (xl未満の全画面で表示、オーディオプレーヤーの上) */}
       {!isXlScreen && (
       <div
-        className="backdrop-blur-sm shadow-lg border-t border-b"
         style={{
           position: 'fixed',
           bottom: '3.5rem',
           left: 0,
           right: 0,
           zIndex: 40,
-          backgroundColor: `color-mix(in srgb, ${CSS_VARS.BASE} 95%, transparent)`,
-          borderColor: CSS_VARS.NEUTRAL,
+          backgroundColor: COLORS.SURFACE,
+          borderTop: `1px solid ${COLORS.INK}`,
+          borderBottom: `1px solid ${COLORS.NEUTRAL}`,
         }}
       >
         {/* 展開されたプログレス詳細 */}
@@ -230,48 +224,42 @@ export default function Sidebar({
           <div
             className="border-b px-4 py-3"
             style={{
-              backgroundColor: CSS_VARS.BASE,
-              borderColor: CSS_VARS.NEUTRAL,
+              backgroundColor: COLORS.SURFACE,
+              borderColor: COLORS.NEUTRAL,
             }}
           >
             {/* 統計情報 */}
             <div className="grid grid-cols-2 gap-2">
               <div
-                className="rounded-lg px-3 py-2 border"
-                style={{
-                  backgroundColor: `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`,
-                  borderColor: CSS_VARS.SECONDARY,
-                }}
+                className="px-3 py-2 border"
+                style={{ borderColor: COLORS.NEUTRAL }}
               >
                 <div
                   className="font-medium text-xs"
-                  style={{ color: CSS_VARS.SECONDARY }}
+                  style={{ color: COLORS.SECONDARY }}
                 >
                   文字数
                 </div>
                 <div
                   className="font-bold text-sm"
-                  style={{ color: CSS_VARS.SECONDARY_DARK }}
+                  style={{ color: COLORS.INK }}
                 >
                   {progress.currentCharCount.toLocaleString()} / {progress.totalCharCount.toLocaleString()}
                 </div>
               </div>
               <div
-                className="rounded-lg px-3 py-2 border"
-                style={{
-                  backgroundColor: `color-mix(in srgb, ${CSS_VARS.PRIMARY} 20%, transparent)`,
-                  borderColor: CSS_VARS.PRIMARY,
-                }}
+                className="px-3 py-2 border"
+                style={{ borderColor: COLORS.NEUTRAL }}
               >
                 <div
                   className="font-medium text-xs"
-                  style={{ color: CSS_VARS.PRIMARY }}
+                  style={{ color: COLORS.SECONDARY }}
                 >
                   文章数
                 </div>
                 <div
                   className="font-bold text-sm"
-                  style={{ color: CSS_VARS.PRIMARY_DARK }}
+                  style={{ color: COLORS.INK }}
                 >
                   {progress.currentItemIndex} / {progress.totalItems}
                 </div>
@@ -288,11 +276,11 @@ export default function Sidebar({
               {/* 表示/隠す ボタン */}
               <button
                 onClick={() => setDropdownAlwaysOpen(!dropdownAlwaysOpen)}
-                className="px-3 py-2 rounded-lg font-medium shadow-md interactive-pill border text-xs whitespace-nowrap"
+                className="min-h-11 px-3 font-bold cursor-pointer interactive-link border text-xs whitespace-nowrap"
                 style={{
-                  backgroundColor: dropdownAlwaysOpen ? CSS_VARS.BASE : CSS_VARS.NEUTRAL,
-                  borderColor: CSS_VARS.NEUTRAL,
-                  color: dropdownAlwaysOpen ? '#374151' : '#4b5563',
+                  backgroundColor: dropdownAlwaysOpen ? COLORS.SURFACE : COLORS.NEUTRAL_SOFT,
+                  borderColor: COLORS.NEUTRAL,
+                  color: dropdownAlwaysOpen ? COLORS.INK : COLORS.SECONDARY_DARK,
                 }}
               >
                 {dropdownAlwaysOpen ? "表示" : "隠す"}
@@ -306,31 +294,37 @@ export default function Sidebar({
                   aria-label="プログレス詳細を表示"
                 >
                   <div
-                    className="relative h-8 rounded-full overflow-hidden shadow-md"
-                    style={{ backgroundColor: CSS_VARS.NEUTRAL }}
+                    className="relative h-8 overflow-hidden"
+                    style={{ backgroundColor: COLORS.NEUTRAL }}
                   >
                     <div
                       className="absolute inset-y-0 left-0 transition-all duration-300 ease-out flex items-center justify-center"
                       style={{
                         width: `${progress.percentage}%`,
-                        background: `linear-gradient(to right, ${CSS_VARS.SECONDARY}, ${CSS_VARS.SECONDARY_DARK})`,
+                        backgroundColor: COLORS.INK,
                       }}
                     >
                       {progress.percentage > 20 && (
-                        <span className="text-white font-bold text-xs">
+                        <span className="font-bold text-xs" style={{ color: COLORS.SURFACE }}>
                           {progress.percentage}%
                         </span>
                       )}
                     </div>
                     {progress.percentage <= 20 && (
-                      <span className="absolute inset-0 flex items-center justify-center text-gray-600 font-bold text-xs">
+                      <span
+                        className="absolute inset-0 flex items-center justify-center font-bold text-xs"
+                        style={{ color: COLORS.INK }}
+                      >
                         {progress.percentage}%
                       </span>
                     )}
                     {/* 展開インジケーター */}
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <div
+                      className="absolute right-2 top-1/2 -translate-y-1/2"
+                      style={{ color: COLORS.SECONDARY }}
+                    >
                       <svg
-                        className={`w-4 h-4 text-gray-600 transition-transform ${
+                        className={`w-4 h-4 transition-transform ${
                           mobileProgressExpanded ? 'rotate-180' : ''
                         }`}
                         fill="none"
@@ -355,13 +349,11 @@ export default function Sidebar({
               {allHeaders.length > 0 && (
                 <button
                   onClick={handleCopyHeaders}
-                  className="px-3 py-2 rounded-lg border font-medium shadow-md interactive-pill text-xs whitespace-nowrap"
+                  className="min-h-11 px-3 border font-bold cursor-pointer interactive-link text-xs whitespace-nowrap"
                   style={{
-                    backgroundColor: copyFeedback
-                      ? `color-mix(in srgb, ${CSS_VARS.SECONDARY} 30%, transparent)`
-                      : `color-mix(in srgb, ${CSS_VARS.SECONDARY} 20%, transparent)`,
-                    borderColor: CSS_VARS.SECONDARY,
-                    color: CSS_VARS.SECONDARY,
+                    backgroundColor: copyFeedback ? COLORS.NEUTRAL_SOFT : COLORS.SURFACE,
+                    borderColor: COLORS.INK,
+                    color: COLORS.INK,
                   }}
                 >
                   {copyFeedback ? '済' : 'コピー'}
@@ -369,11 +361,10 @@ export default function Sidebar({
               )}
               <button
                 onClick={scrollToBookmark}
-                className="px-4 py-2 rounded-lg border font-medium shadow-md interactive-pill text-xs whitespace-nowrap"
+                className="min-h-11 px-4 font-bold cursor-pointer interactive-link text-xs whitespace-nowrap"
                 style={{
-                  backgroundColor: `color-mix(in srgb, ${CSS_VARS.PRIMARY} 20%, transparent)`,
-                  borderColor: CSS_VARS.PRIMARY,
-                  color: CSS_VARS.PRIMARY,
+                  backgroundColor: COLORS.PRIMARY,
+                  color: COLORS.SURFACE,
                 }}
               >
                 ブックマーク

@@ -8,6 +8,7 @@ import StartHereIcon from "@/app/components/icons/StartHereIcon";
 import BookImage from "@/app/components/reading/BookImage";
 import { COLORS, EXPLANATION_CONFIG } from "@/lib/constants";
 import { parseFurigana, segmentsToHTML } from "@/lib/utils/furiganaParser";
+import { toTint } from "@/lib/utils/colorTint";
 import { bookImagePath } from "@/lib/utils/bookAssetPath";
 import { guestKeyHeaders, promptGuestKeyOnFailure } from "@/lib/guestKeys";
 
@@ -223,14 +224,13 @@ const ParagraphItem: React.FC<ParagraphItemProps> = ({
                 e.stopPropagation();
                 onSentenceClick(sentence);
               }}
-              className="cursor-pointer transition-colors rounded-md px-1"
+              className="cursor-pointer transition-colors px-1"
               style={{
                 backgroundColor: "transparent",
                 transition: "background-color 0.2s ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor =
-                  "rgba(0, 122, 255, 0.06)";
+                e.currentTarget.style.backgroundColor = toTint(COLORS.PRIMARY, 10);
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = "transparent";
@@ -247,7 +247,7 @@ const ParagraphItem: React.FC<ParagraphItemProps> = ({
       return (
         <div
           className="head-text font-bold text-lg whitespace-pre-wrap"
-          style={{ color: "#636366" }}
+          style={{ color: COLORS.SECONDARY_DARK }}
         >
           {translatedText}
         </div>
@@ -303,7 +303,7 @@ const ParagraphItem: React.FC<ParagraphItemProps> = ({
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: "8px",
+    borderRadius: "2px",
     border: "none",
     background: "none",
     cursor: "pointer",
@@ -324,23 +324,22 @@ const ParagraphItem: React.FC<ParagraphItemProps> = ({
   return (
     <div className="paragraph-item" id={id} data-global-index={globalIndex} style={{ scrollMarginTop: '80px' }}>
       <div
-        className="p-4 my-4 rounded-xl"
+        className="p-4 my-4"
         style={{
           backgroundColor: isPlaying
-            ? "rgba(52, 199, 89, 0.08)"
+            ? toTint(COLORS.PLAYING, 10)
             : isStartCursor
-              ? "rgba(255, 149, 0, 0.06)"
+              ? toTint(COLORS.START_CURSOR, 7)
               : isBookmarked
-                ? "rgba(0, 122, 255, 0.03)"
+                ? toTint(COLORS.PRIMARY, 7)
                 : "transparent",
           borderLeft: isPlaying
-            ? `4px solid ${COLORS.PLAYING}`
+            ? `2px solid ${COLORS.PLAYING}`
             : isStartCursor
-              ? `4px solid ${COLORS.START_CURSOR}`
+              ? `2px solid ${COLORS.START_CURSOR}`
               : isBookmarked
-                ? "4px solid #007AFF"
+                ? `2px solid ${COLORS.PRIMARY}`
                 : "none",
-          border: isPlaying || isStartCursor || isBookmarked ? undefined : "1px solid rgba(0, 0, 0, 0.04)",
         }}
       >
         <div className="flex flex-col sm:flex-row sm:items-start gap-2">
@@ -354,7 +353,7 @@ const ParagraphItem: React.FC<ParagraphItemProps> = ({
             }}
             style={buttonBaseStyle}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.04)";
+              e.currentTarget.style.backgroundColor = toTint(COLORS.INK, 4);
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = "transparent";
@@ -379,7 +378,7 @@ const ParagraphItem: React.FC<ParagraphItemProps> = ({
             opacity: translating ? 0.5 : 1,
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.04)";
+            e.currentTarget.style.backgroundColor = toTint(COLORS.INK, 4);
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = "transparent";
@@ -403,7 +402,7 @@ const ParagraphItem: React.FC<ParagraphItemProps> = ({
             type="submit"
             style={buttonBaseStyle}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.04)";
+              e.currentTarget.style.backgroundColor = toTint(COLORS.INK, 4);
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = "transparent";
