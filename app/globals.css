@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #F2F2F7;
-  --foreground: #1D1D1F;
+  --background: #F6F7F9;
+  --foreground: #15171C;
 
-  --color-base: #F2F2F7;
-  --color-neutral: #D1D1D6;
-  --color-primary: #007AFF;
-  --color-primary-dark: #0051D5;
-  --color-secondary: #8E8E93;
-  --color-secondary-dark: #636366;
+  --color-base: #F6F7F9;
+  --color-neutral: #D5D8DE;
+  --color-primary: #2F4BA0;
+  --color-primary-dark: #243B80;
+  --color-secondary: #5B6270;
+  --color-secondary-dark: #3A3F4A;
 }
 
 @theme inline {
@@ -17,12 +17,14 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-mincho: var(--font-shippori-mincho), 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  --font-gothic: var(--font-zen-kaku-gothic), 'Hiragino Kaku Gothic ProN', 'Yu Gothic', system-ui, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  @apply font-gothic;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
@@ -38,7 +40,7 @@ body {
 }
 
 ::selection {
-  background-color: rgba(0, 122, 255, 0.2);
+  background-color: rgba(47, 75, 160, 0.2);
   color: inherit;
 }
 
@@ -50,7 +52,7 @@ body {
 .paragraph-item,
 .paragraph-item p {
   font-size: 1.3rem !important;
-  font-family: 'Noto Serif JP', serif;
+  @apply font-mincho;
   font-weight: 500;
   line-height: 1.7;
   letter-spacing: 0.01em;
@@ -64,11 +66,10 @@ rt {
 }
 
 .sub-item-text {
-  background: rgba(0, 122, 255, 0.04);
-  border: 1px solid rgba(0, 122, 255, 0.08);
-  font-size: large;
-  border-radius: 12px;
-  padding: 12px 16px;
+  @apply font-gothic;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.8;
 }
 
 .head-text {
@@ -99,7 +100,7 @@ rt {
 
 /* Reader content */
 .reader-content {
-  font-family: "Noto Serif JP", serif;
+  @apply font-mincho;
   font-weight: 400;
 }
 
@@ -112,44 +113,52 @@ rt {
   color: var(--color-secondary);
 }
 
-/* Apple-style range slider */
+/* Range slider: a thin rule with an ink marker.
+   The custom properties let a caller paint the filled part of the track. */
 input[type="range"] {
+  --range-fill: #2F4BA0;
+  --range-track: #D5D8DE;
+  --range-thumb: #FFFFFF;
+  --range-thumb-edge: #15171C;
   -webkit-appearance: none;
   appearance: none;
-  height: 4px;
-  border-radius: 2px;
+  height: 2px;
+  border-radius: 0;
   outline: none;
-  background: #E5E5EA;
+  background: var(--range-track);
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #FFFFFF;
+  box-sizing: border-box;
+  width: 14px;
+  height: 24px;
+  border-radius: 0;
+  background: var(--range-thumb);
+  border: 2px solid var(--range-thumb-edge);
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.04);
-  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: none;
+  transition: border-color 0.15s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.08);
+  border-color: var(--range-fill);
 }
 
 input[type="range"]::-webkit-slider-thumb:active {
-  transform: scale(1.04);
+  border-color: var(--range-fill);
 }
 
 input[type="range"]::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #FFFFFF;
+  box-sizing: border-box;
+  width: 14px;
+  height: 24px;
+  border-radius: 0;
+  background: var(--range-thumb);
   cursor: pointer;
-  border: none;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  border: 2px solid var(--range-thumb-edge);
+  box-shadow: none;
 }
 
 /* Library card animation */
@@ -168,7 +177,7 @@ input[type="range"]::-moz-range-thumb {
   animation: cardFadeIn 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
-/* Apple-style scrollbar */
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -179,12 +188,12 @@ input[type="range"]::-moz-range-thumb {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
-  border-radius: 3px;
+  background: color-mix(in srgb, var(--color-secondary) 40%, transparent);
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.22);
+  background: color-mix(in srgb, var(--color-secondary) 70%, transparent);
 }
 
 /* Toolbar icon button base */
@@ -194,9 +203,9 @@ input[type="range"]::-moz-range-thumb {
   justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  color: #007AFF;
+  border-radius: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  color: var(--color-primary);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -204,100 +213,103 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .toolbar-btn:hover {
-  background: rgba(0, 122, 255, 0.08);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 
 .toolbar-btn:active {
-  transform: scale(0.92);
-  background: rgba(0, 122, 255, 0.12);
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
 }
 
 .toolbar-btn.active {
-  background: rgba(0, 122, 255, 0.12);
-  color: #007AFF;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
 }
 
 .toolbar-btn.muted {
-  color: #8E8E93;
+  color: var(--color-secondary);
 }
 
 .toolbar-btn.muted:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
 }
 
-/* Apple-style segmented control */
+/* Segmented control: ruled box, the selected segment filled with ink */
 .segmented-control {
   display: flex;
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 10px;
-  padding: 2px;
+  background: transparent;
+  border: 1px solid var(--color-neutral);
+  border-radius: 0;
+  padding: 0;
   gap: 0;
 }
 
 .segmented-control button {
   flex: 1;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 10px 16px;
+  border-radius: 0;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
   border: none;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  color: #1D1D1F;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  color: var(--color-secondary);
   background: transparent;
 }
 
 .segmented-control button:not(.active):hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: color-mix(in srgb, #15171C 6%, transparent);
 }
 
 .segmented-control button:not(.active):active {
-  background: rgba(0, 0, 0, 0.08);
-  transform: scale(0.97);
+  background: color-mix(in srgb, #15171C 12%, transparent);
 }
 
 .segmented-control button.active {
-  background: #FFFFFF;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  background: #15171C;
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: none;
 }
 
-/* Apple toggle */
+/* Switch (class name kept from the previous design) */
 .apple-toggle {
   position: relative;
-  width: 51px;
-  height: 31px;
-  border-radius: 16px;
-  background: #E5E5EA;
+  flex-shrink: 0;
+  width: 44px;
+  height: 24px;
+  border-radius: 0;
+  background: #D5D8DE;
   border: none;
   cursor: pointer;
-  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .apple-toggle.on {
-  background: #34C759;
+  background: #2F4BA0;
 }
 
 .apple-toggle .thumb {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 27px;
-  height: 27px;
-  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 0;
   background: #FFFFFF;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.06);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: none;
+  transition: transform 0.15s ease;
 }
 
 .apple-toggle.on .thumb {
   transform: translateX(20px);
 }
 
-/* Grouped settings list (Apple Settings style) */
+/* Grouped settings list */
 .settings-group {
   background: #FFFFFF;
-  border-radius: 14px;
+  border: 1px solid var(--color-neutral);
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -305,101 +317,119 @@ input[type="range"]::-moz-range-thumb {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   padding: 12px 16px;
   min-height: 44px;
 }
 
 .settings-row + .settings-row {
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  margin-left: 16px;
-  padding-left: 0;
+  border-top: 1px solid var(--color-neutral);
+  margin-left: 0;
 }
 
 .settings-label {
   font-size: 15px;
-  color: #1D1D1F;
+  color: #15171C;
 }
 
 .settings-sublabel {
   font-size: 12px;
-  color: #8E8E93;
+  color: var(--color-secondary);
   margin-top: 1px;
 }
 
 /* Dark mode overrides for BottomSheet */
+.dark-sheet input[type="range"] {
+  --range-fill: #9DB0EC;
+  --range-track: #343943;
+  --range-thumb: #1E2128;
+  --range-thumb-edge: #ECEAE4;
+}
+
 .dark-sheet .segmented-control {
-  background: rgba(255, 255, 255, 0.08);
+  background: transparent;
+  border-color: #343943;
 }
 
 .dark-sheet .segmented-control button {
-  color: #F2F2F7;
+  color: #A3AAB8;
 }
 
 .dark-sheet .segmented-control button.active {
-  background: #2C2C2E;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: #ECEAE4;
+  color: #15171C;
+  box-shadow: none;
 }
 
 .dark-sheet .segmented-control button:not(.active):hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, #ECEAE4 8%, transparent);
 }
 
 .dark-sheet .apple-toggle {
-  background: #38383A;
+  background: #343943;
+}
+
+.dark-sheet .apple-toggle.on {
+  background: #9DB0EC;
+}
+
+.dark-sheet .apple-toggle .thumb {
+  background: #ECEAE4;
+}
+
+.dark-sheet .apple-toggle.on .thumb {
+  background: #15171C;
 }
 
 .dark-sheet .settings-group {
-  background: #2C2C2E;
+  background: #1E2128;
+  border-color: #343943;
 }
 
 .dark-sheet .settings-row + .settings-row {
-  border-top-color: rgba(255, 255, 255, 0.06);
+  border-top-color: #343943;
 }
 
 .dark-sheet .settings-label {
-  color: #F2F2F7;
+  color: #ECEAE4;
 }
 
 .dark-sheet .settings-sublabel {
-  color: #98989D;
+  color: #A3AAB8;
 }
 
-/* Apple-style interactive elements */
+/* Interactive elements: feedback comes from opacity and ink tints, never from movement */
 
 .interactive-pill {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.15s ease;
   -webkit-tap-highlight-color: transparent;
   cursor: pointer;
 }
 
 .interactive-pill:hover {
-  filter: brightness(0.94);
-  transform: scale(1.04);
+  opacity: 0.8;
 }
 
 .interactive-pill:active {
-  transform: scale(0.96);
-  filter: brightness(0.9);
+  opacity: 0.6;
 }
 
 .interactive-close {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
   cursor: pointer;
 }
 
 .interactive-close:hover {
-  background-color: #E5E5EA !important;
-  transform: scale(1.08);
+  background-color: color-mix(in srgb, currentColor 12%, transparent) !important;
 }
 
 .interactive-close:active {
-  transform: scale(0.92);
-  background-color: #D1D1D6 !important;
+  background-color: color-mix(in srgb, currentColor 22%, transparent) !important;
 }
 
 .interactive-link {
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -409,37 +439,33 @@ input[type="range"]::-moz-range-thumb {
 
 .interactive-link:active {
   opacity: 0.5;
-  transform: scale(0.98);
 }
 
 .interactive-card {
-  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: opacity 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .interactive-card:hover {
-  transform: scale(1.02);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06) !important;
+  opacity: 0.85;
 }
 
 .interactive-card:active {
-  transform: scale(0.98);
+  opacity: 0.7;
 }
 
 .interactive-btn {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.15s ease;
   -webkit-tap-highlight-color: transparent;
   cursor: pointer;
 }
 
 .interactive-btn:hover {
-  filter: brightness(0.92);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  opacity: 0.88;
 }
 
 .interactive-btn:active {
-  transform: scale(0.97);
-  filter: brightness(0.88);
+  opacity: 0.75;
 }
 
 .interactive-btn:disabled {
@@ -447,46 +473,43 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .interactive-page-btn {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
   cursor: pointer;
 }
 
 .interactive-page-btn:hover:not(:disabled) {
-  background-color: rgba(0, 122, 255, 0.08) !important;
-  transform: scale(1.06);
+  background-color: color-mix(in srgb, currentColor 8%, transparent) !important;
 }
 
 .interactive-page-btn:active:not(:disabled) {
-  transform: scale(0.94);
+  background-color: color-mix(in srgb, currentColor 16%, transparent) !important;
 }
 
 .interactive-star {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.15s ease;
   -webkit-tap-highlight-color: transparent;
   cursor: pointer;
 }
 
 .interactive-star:hover {
-  transform: scale(1.2);
+  opacity: 0.7;
 }
 
 .interactive-star:active {
-  transform: scale(0.85);
+  opacity: 0.5;
 }
 
 .interactive-nav-btn {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
   cursor: pointer;
 }
 
 .interactive-nav-btn:hover {
-  background-color: rgba(0, 0, 0, 0.04);
-  transform: scale(1.05);
+  background-color: color-mix(in srgb, currentColor 8%, transparent);
 }
 
 .interactive-nav-btn:active {
-  transform: scale(0.92);
-  background-color: rgba(0, 0, 0, 0.08);
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
 }
