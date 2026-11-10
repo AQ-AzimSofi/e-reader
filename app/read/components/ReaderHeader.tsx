@@ -2,7 +2,8 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { DARK_COLORS } from '@/lib/constants';
+import { COLORS, DARK_COLORS } from '@/lib/constants';
+import { formatBookTitle } from '@/lib/utils/bookTitle';
 
 interface ReaderHeaderProps {
   currentPage: number;
@@ -14,12 +15,29 @@ interface ReaderHeaderProps {
   onPageChange: (page: number) => void;
 }
 
+const LIGHT_HEADER_THEME = {
+  surface: 'rgba(255,255,255,0.92)',
+  border: COLORS.NEUTRAL,
+  text: COLORS.INK,
+  textMuted: COLORS.SECONDARY,
+  inputBg: COLORS.NEUTRAL_SOFT,
+  accent: COLORS.PRIMARY,
+};
+
+const DARK_HEADER_THEME = {
+  surface: 'rgba(21,23,28,0.92)',
+  border: DARK_COLORS.NEUTRAL,
+  text: DARK_COLORS.TEXT,
+  textMuted: DARK_COLORS.TEXT_MUTED,
+  inputBg: DARK_COLORS.SURFACE,
+  accent: DARK_COLORS.PRIMARY,
+};
+
 export default function ReaderHeader({
   currentPage,
   totalPages,
   bookmarkPage,
   isDarkMode,
-  directoryParam,
   fileNameParam,
   onPageChange,
 }: ReaderHeaderProps) {
@@ -43,13 +61,12 @@ export default function ReaderHeader({
     }
   };
 
-  const theme = isDarkMode
-    ? { surface: 'rgba(28,28,30,0.85)', border: 'rgba(255,255,255,0.06)', text: DARK_COLORS.TEXT, textMuted: '#8E8E93', inputBg: DARK_COLORS.SECONDARY }
-    : { surface: 'rgba(255,255,255,0.85)', border: 'rgba(0,0,0,0.06)', text: '#1D1D1F', textMuted: '#8E8E93', inputBg: '#F2F2F7' };
+  const theme = isDarkMode ? DARK_HEADER_THEME : LIGHT_HEADER_THEME;
+  const bookTitle = fileNameParam ? formatBookTitle(fileNameParam) : '';
 
   return (
     <header
-      className="sticky top-0 z-40 backdrop-blur-xl border-b transition-colors duration-300"
+      className="sticky top-0 z-40 backdrop-blur-xl border-b transition-colors duration-300 font-gothic"
       style={{
         backgroundColor: theme.surface,
         borderColor: theme.border,
@@ -57,77 +74,90 @@ export default function ReaderHeader({
       }}
     >
       <div className="max-w-3xl mx-auto px-4 h-full">
-        <div className="flex items-center justify-between h-full">
+        <div className="flex items-center justify-between gap-3 h-full">
           <button
             onClick={() => router.push('/library')}
-            className="flex items-center gap-1 interactive-nav-btn flex-shrink-0 rounded-lg px-2 py-1"
-            style={{ color: '#007AFF' }}
+            className="flex items-center gap-1.5 interactive-nav-btn flex-shrink-0 px-2 py-1"
+            style={{ color: theme.text }}
+            aria-label="本棚に戻る"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span className="hidden sm:inline text-sm font-medium">Library</span>
+            <span className="hidden sm:inline text-sm">本棚</span>
           </button>
 
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <button
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage <= 1}
-              className="p-1.5 rounded-lg disabled:opacity-30 interactive-nav-btn"
-              style={{ color: theme.textMuted }}
+          <div className="flex items-center gap-4 min-w-0">
+            <span
+              className="hidden md:block font-mincho font-bold text-[17px] tracking-[0.06em] truncate"
+              style={{ color: theme.text }}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
+              {bookTitle}
+            </span>
 
-            <div className="flex items-center gap-1">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={isPageInputFocused ? pageInput : currentPage.toString()}
-                onChange={(e) => setPageInput(e.target.value)}
-                onFocus={() => {
-                  setIsPageInputFocused(true);
-                  setPageInput(currentPage.toString());
-                }}
-                onBlur={() => {
-                  setIsPageInputFocused(false);
-                  handleGoToPage();
-                }}
-                onKeyDown={handlePageInputKeyDown}
-                className="w-10 text-center text-sm font-medium py-1 rounded-lg border-none focus:outline-none focus:ring-2 bg-transparent"
-                style={{
-                  color: theme.text,
-                  ...(isPageInputFocused ? { backgroundColor: theme.inputBg, boxShadow: '0 0 0 3px rgba(0,122,255,0.3)' } : {}),
-                }}
-              />
-              <span className="text-sm" style={{ color: theme.textMuted }}>
-                / {totalPages}
-              </span>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage <= 1}
+                className="p-1.5 disabled:opacity-30 interactive-nav-btn"
+                style={{ color: theme.textMuted }}
+                aria-label="前のページ"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  aria-label="ページ番号"
+                  value={isPageInputFocused ? pageInput : currentPage.toString()}
+                  onChange={(e) => setPageInput(e.target.value)}
+                  onFocus={() => {
+                    setIsPageInputFocused(true);
+                    setPageInput(currentPage.toString());
+                  }}
+                  onBlur={() => {
+                    setIsPageInputFocused(false);
+                    handleGoToPage();
+                  }}
+                  onKeyDown={handlePageInputKeyDown}
+                  className="w-10 text-center text-sm font-medium py-1 border-none focus:outline-none bg-transparent"
+                  style={{
+                    color: theme.text,
+                    ...(isPageInputFocused ? { backgroundColor: theme.inputBg, boxShadow: `0 0 0 2px ${theme.accent}` } : {}),
+                  }}
+                />
+                <span className="text-sm whitespace-nowrap" style={{ color: theme.textMuted }}>
+                  / {totalPages}
+                </span>
+              </div>
+
+              <button
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                className="p-1.5 disabled:opacity-30 interactive-nav-btn"
+                style={{ color: theme.textMuted }}
+                aria-label="次のページ"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </div>
-
-            <button
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages}
-              className="p-1.5 rounded-lg disabled:opacity-30 interactive-nav-btn"
-              style={{ color: theme.textMuted }}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
           </div>
 
-          <div className="flex-shrink-0" style={{ minWidth: '48px' }}>
+          <div className="flex-shrink-0 text-right" style={{ minWidth: '48px' }}>
             {bookmarkPage && bookmarkPage !== currentPage && (
               <button
                 onClick={() => onPageChange(bookmarkPage)}
-                className="text-sm font-medium interactive-link"
-                style={{ color: '#007AFF' }}
-                title={`Go to bookmark (page ${bookmarkPage})`}
+                className="text-sm font-bold interactive-link"
+                style={{ color: theme.accent }}
+                title={`栞のページへ (p.${bookmarkPage})`}
               >
-                p.{bookmarkPage}
+                栞 p.{bookmarkPage}
               </button>
             )}
           </div>
